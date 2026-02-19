@@ -3,12 +3,20 @@ import { GameState } from './state/GameState';
 import { WelcomeScreen } from './scenes/WelcomeScreen';
 import { WaitingRoomScreen } from './scenes/WaitingRoomScreen';
 import { GameScreen } from './scenes/GameScreen';
-import { createNewRoom, joinRoom } from './api/api';
+import { createNewRoom, joinRoom, updateRoomSettings, startGame } from './api/api';
+import { subscribeToRoom, RoomData } from './api/roomSync';
+import { getPlayerId } from './utils/playerId';
+import { Unsubscribe } from 'firebase/firestore';
 
 const app = new Application();
 const gameState = new GameState();
 
 let currentScreen: WelcomeScreen | WaitingRoomScreen | GameScreen | null = null;
+let roomUnsubscribe: Unsubscribe | null = null;
+
+// Initialize player ID on load
+const playerId = getPlayerId();
+console.log('Player ID:', playerId);
 
 await app.init({
   resizeTo: window,
@@ -19,9 +27,38 @@ await app.init({
 
 document.body.appendChild(app.canvas);
 
+function handleRoomUpdate(room: RoomData): void {
+  // Update game state with room data
+  gameState.setNumberOfPlayers(room.players.length);
+  gameState.setNumberOfRounds(room.numberOfRounds);
+  gameState.setMaxPlayers(room.maxPlayers);
+  gameState.setCurrentRound(room.currentRound);
+
+  // Check if current player is admin
+  const isAdmin = room.players.find(p => p.id === playerId)?.isAdmin || false;
+
+  // Update waiting room if it's the current screen
+  if (currentScreen instanceof WaitingRoomScreen) {
+    currentScreen.updatePlayers(room.players.length);
+    currentScreen.updateSettings(room.numberOfRounds, room.maxPlayers);
+  }
+
+  // Transition to game screen if game started
+  if (room.status === 'playing' && gameState.getCurrentScreen() === 'waiting') {
+    gameState.startGame();
+    showGameScreen();
+  }
+}
+
 function showWelcomeScreen(): void {
   if (currentScreen) {
     currentScreen.destroy();
+  }
+
+  // Unsubscribe from room updates
+  if (roomUnsubscribe) {
+    roomUnsubscribe();
+    roomUnsubscribe = null;
   }
 
   const welcomeScreen = new WelcomeScreen(
@@ -31,15 +68,21 @@ function showWelcomeScreen(): void {
         welcomeScreen.showError(response.error || 'Failed to join room');
         return;
       }
-      gameState.setRoomNumber(roomNumber);
-      gameState.joinRoom(roomNumber);
+      gameState.joinRoom(roomNumber, false);
+
+      // Subscribe to room updates
+      roomUnsubscribe = subscribeToRoom(roomNumber, gameState, handleRoomUpdate);
+
       showWaitingRoomScreen();
     },
     async () => {
       const response = await createNewRoom();
       if (response.success) {
-        gameState.setRoomNumber(response.roomId);
-        await gameState.createRoom();
+        gameState.createRoom(response.roomId);
+
+        // Subscribe to room updates
+        roomUnsubscribe = subscribeToRoom(response.roomId, gameState, handleRoomUpdate);
+
         showWaitingRoomScreen();
       }
     }
@@ -61,10 +104,20 @@ function showWaitingRoomScreen(): void {
     gameState.getNumberOfPlayers(),
     gameState.getNumberOfRounds(),
     gameState.getMaxRounds(),
-    (rounds) => {
-      gameState.setNumberOfRounds(rounds);
-      gameState.startGame();
-      showGameScreen();
+    async (rounds) => {
+      // Update settings on server
+      if (gameState.isRoomAdmin()) {
+        await updateRoomSettings(roomId, { numberOfRounds: rounds });
+      }
+    },
+    async () => {
+      // Start game on server
+      if (gameState.isRoomAdmin()) {
+        const response = await startGame(roomId);
+        if (!response.success) {
+          console.error('Failed to start game:', response.error);
+        }
+      }
     }
   );
 
@@ -84,7 +137,7 @@ function showGameScreen(): void {
     gameState.getNumberOfRounds()
   );
   gameScreen.updateHand(gameState.getPlayerHand());
-  
+
   app.stage.addChild(gameScreen.getContainer());
   currentScreen = gameScreen;
 }

@@ -5,11 +5,12 @@ export interface Room {
   status: 'waiting' | 'playing' | 'finished';
   numberOfRounds: number;
   maxPlayers: number;
-  players: string[];
+  players: Player[];
+  currentRound: number;
 }
 
 export interface Player {
   id: string;
-  roomId: string;
   joinedAt: number;
+  isAdmin: boolean;
 }

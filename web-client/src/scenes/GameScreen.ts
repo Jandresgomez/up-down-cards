@@ -20,6 +20,10 @@ export class GameScreen {
     });
     this.roomIdText.x = 20;
     this.roomIdText.y = 20;
+
+    // Copy button
+    const copyBtn = this.createCopyButton(roomId, 220, 15);
+    this.container.addChild(copyBtn);
     
     // Round display
     this.roundText = new Text({
@@ -98,6 +102,42 @@ export class GameScreen {
     cardContainer.addChild(text);
 
     return cardContainer;
+  }
+
+  private createCopyButton(roomId: string, x: number, y: number): Container {
+    const btn = new Container();
+    
+    const bg = new Graphics();
+    bg.roundRect(0, 0, 80, 40, 8);
+    bg.fill(0x4a5568);
+    bg.stroke({ width: 2, color: 0x718096 });
+    btn.addChild(bg);
+
+    const label = new Text({
+      text: 'Copy',
+      style: { fontSize: 18, fill: 0xffffff }
+    });
+    label.anchor.set(0.5);
+    label.x = 40;
+    label.y = 20;
+    btn.addChild(label);
+
+    btn.x = x;
+    btn.y = y;
+    btn.eventMode = 'static';
+    btn.cursor = 'pointer';
+    
+    btn.on('pointerdown', async () => {
+      try {
+        await navigator.clipboard.writeText(roomId);
+        label.text = 'Copied!';
+        setTimeout(() => { label.text = 'Copy'; }, 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
+    });
+
+    return btn;
   }
 
   getContainer(): Container {

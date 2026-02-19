@@ -22,6 +22,28 @@ export interface JoinRoomResponse {
   };
 }
 
+export interface UpdateRoomSettingsResponse {
+  result?: {
+    success: boolean;
+    error?: string;
+  };
+  error?: {
+    message: string;
+    status: string;
+  };
+}
+
+export interface StartGameResponse {
+  result?: {
+    success: boolean;
+    error?: string;
+  };
+  error?: {
+    message: string;
+    status: string;
+  };
+}
+
 export async function callFunction<T>(functionName: string, data: any = {}): Promise<T> {
   const response = await fetch(`${BASE_URL}/${functionName}`, {
     method: 'POST',

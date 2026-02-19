@@ -12,7 +12,8 @@ export class GameState {
   private tableCards: CardValue[] = [];
   private numberOfPlayers: number = 1;
   private numberOfRounds: number = 1;
-  private currentRound: number = 1;
+  private maxPlayers: number = 4;
+  private currentRound: number = 0;
 
   getCurrentScreen(): GameScreen {
     return this.currentScreen;
@@ -34,6 +35,10 @@ export class GameState {
     return this.numberOfRounds;
   }
 
+  getMaxPlayers(): number {
+    return this.maxPlayers;
+  }
+
   getCurrentRound(): number {
     return this.currentRound;
   }
@@ -51,21 +56,31 @@ export class GameState {
     this.numberOfPlayers = players;
   }
 
-  joinRoom(roomNumber: string): void {
+  setMaxPlayers(maxPlayers: number): void {
+    this.maxPlayers = maxPlayers;
+  }
+
+  setCurrentRound(round: number): void {
+    this.currentRound = round;
+  }
+
+  joinRoom(roomNumber: string, isAdmin: boolean = false): void {
     this.roomNumber = roomNumber;
-    this.isAdmin = false;
+    this.isAdmin = isAdmin;
     this.currentScreen = 'waiting';
   }
 
-  async createRoom(): Promise<string> {
+  async createRoom(roomNumber: string): Promise<void> {
+    this.roomNumber = roomNumber;
     this.isAdmin = true;
     this.currentScreen = 'waiting';
-    return this.roomNumber!;
   }
 
   startGame(): void {
     this.currentScreen = 'game';
-    this.currentRound = 1;
+    if (this.currentRound === 0) {
+      this.currentRound = 1;
+    }
     this.initializeGame();
   }
 

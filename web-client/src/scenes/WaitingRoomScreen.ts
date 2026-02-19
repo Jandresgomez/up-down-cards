@@ -5,9 +5,12 @@ export class WaitingRoomScreen {
   private isAdmin: boolean;
   private numberOfPlayers: number;
   private numberOfRounds: number;
+  private maxPlayers: number;
   private maxRounds: number;
-  private onStartGame: (rounds: number) => void;
+  private onRoundsChange: (rounds: number) => void;
+  private onStartGame: () => void;
   private roundsText: Text;
+  private playersText: Text;
 
   constructor(
     roomId: string,
@@ -15,20 +18,28 @@ export class WaitingRoomScreen {
     numberOfPlayers: number,
     numberOfRounds: number,
     maxRounds: number,
-    onStartGame: (rounds: number) => void
+    onRoundsChange: (rounds: number) => void,
+    onStartGame: () => void
   ) {
     this.container = new Container();
     this.isAdmin = isAdmin;
     this.numberOfPlayers = numberOfPlayers;
     this.numberOfRounds = numberOfRounds;
+    this.maxPlayers = 4;
     this.maxRounds = maxRounds;
+    this.onRoundsChange = onRoundsChange;
     this.onStartGame = onStartGame;
-    
+
     this.roundsText = new Text({
       text: '',
       style: { fontSize: 32, fill: 0xffffff, fontWeight: 'bold' }
     });
-    
+
+    this.playersText = new Text({
+      text: '',
+      style: { fontSize: 24, fill: 0xffffff }
+    });
+
     this.createUI(roomId);
   }
 
@@ -49,19 +60,20 @@ export class WaitingRoomScreen {
       style: { fontSize: 28, fill: 0xaaaaaa }
     });
     roomText.anchor.set(0.5);
-    roomText.x = window.innerWidth / 2;
+    roomText.x = window.innerWidth / 2 - 60;
     roomText.y = 170;
     this.container.addChild(roomText);
 
+    // Copy button
+    const copyBtn = this.createCopyButton(roomId, window.innerWidth / 2 + 120, 155);
+    this.container.addChild(copyBtn);
+
     // Players count
-    const playersText = new Text({
-      text: `Players: ${this.numberOfPlayers}`,
-      style: { fontSize: 24, fill: 0xffffff }
-    });
-    playersText.anchor.set(0.5);
-    playersText.x = window.innerWidth / 2;
-    playersText.y = 250;
-    this.container.addChild(playersText);
+    this.playersText.text = `Players: ${this.numberOfPlayers} / ${this.maxPlayers}`;
+    this.playersText.anchor.set(0.5);
+    this.playersText.x = window.innerWidth / 2;
+    this.playersText.y = 250;
+    this.container.addChild(this.playersText);
 
     if (this.isAdmin) {
       this.createAdminControls();
@@ -123,13 +135,13 @@ export class WaitingRoomScreen {
     const startBtn = this.createButton('Start Game', window.innerWidth / 2 - 150, 500);
     startBtn.eventMode = 'static';
     startBtn.cursor = 'pointer';
-    startBtn.on('pointerdown', () => this.onStartGame(this.numberOfRounds));
+    startBtn.on('pointerdown', () => this.onStartGame());
     this.container.addChild(startBtn);
   }
 
   private createButton(text: string, x: number, y: number): Container {
     const btn = new Container();
-    
+
     const width = text.length === 1 ? 60 : 300;
     const bg = new Graphics();
     bg.roundRect(0, 0, width, 60, 10);
@@ -155,6 +167,55 @@ export class WaitingRoomScreen {
   private changeRounds(delta: number): void {
     this.numberOfRounds = Math.max(1, Math.min(this.numberOfRounds + delta, this.maxRounds));
     this.roundsText.text = `${this.numberOfRounds}`;
+    this.onRoundsChange(this.numberOfRounds);
+  }
+
+  private createCopyButton(roomId: string, x: number, y: number): Container {
+    const btn = new Container();
+    
+    const bg = new Graphics();
+    bg.roundRect(0, 0, 80, 40, 8);
+    bg.fill(0x4a5568);
+    bg.stroke({ width: 2, color: 0x718096 });
+    btn.addChild(bg);
+
+    const label = new Text({
+      text: 'Copy',
+      style: { fontSize: 18, fill: 0xffffff }
+    });
+    label.anchor.set(0.5);
+    label.x = 40;
+    label.y = 20;
+    btn.addChild(label);
+
+    btn.x = x;
+    btn.y = y;
+    btn.eventMode = 'static';
+    btn.cursor = 'pointer';
+    
+    btn.on('pointerdown', async () => {
+      try {
+        await navigator.clipboard.writeText(roomId);
+        label.text = 'Copied!';
+        setTimeout(() => { label.text = 'Copy'; }, 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
+    });
+
+    return btn;
+  }
+
+  updatePlayers(count: number): void {
+    this.numberOfPlayers = count;
+    this.playersText.text = `Players: ${this.numberOfPlayers} / ${this.maxPlayers}`;
+  }
+
+  updateSettings(rounds: number, maxPlayers: number): void {
+    this.numberOfRounds = rounds;
+    this.maxPlayers = maxPlayers;
+    this.roundsText.text = `${this.numberOfRounds}`;
+    this.playersText.text = `Players: ${this.numberOfPlayers} / ${this.maxPlayers}`;
   }
 
   getContainer(): Container {

@@ -2,6 +2,11 @@
 
 A multiplayer card game built with a client-server architecture using Firebase Cloud Functions and Firestore for backend services, and PixiJS for the web client.
 
+## Documentation
+
+Implementation details and feature documentation can be found in the `/docs` folder, read these to get context on the application life-cycle:
+- [001 - Player ID Management & Real-time Room Sync](./docs/001-player-id-and-realtime-sync.md)
+
 ## Project Overview
 
 Up-Down Cards is a web-based multiplayer card game where players can create or join game rooms, configure game settings, and play rounds of cards together in real-time.
