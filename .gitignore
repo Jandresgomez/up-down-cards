@@ -1,0 +1,17 @@
+# Firebase
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+ui-debug.log
+
+# Environment variables (these CAN contain secrets)
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+
+# Build outputs
+web-client/dist/
+server/lib/

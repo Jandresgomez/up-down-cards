@@ -1,0 +1,6 @@
+i  emulators: Starting emulators: functions, firestore, hosting, extensions
+ 
+i  emulators: Received SIGINT (Ctrl-C) for the first time. Starting a clean shutdown.
+i  emulators: Please wait for a clean shutdown or send the SIGINT (Ctrl-C) signal again to stop right now.
+i  emulators: Shutting down emulators.
+i  hub: Stopping emulator hub

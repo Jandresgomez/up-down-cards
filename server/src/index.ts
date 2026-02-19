@@ -11,7 +11,7 @@ function generateRoomId(): string {
 
 export const createRoom = functions.https.onCall(async (data: any) => {
   const roomId = generateRoomId();
-  
+
   const room: Room = {
     id: roomId,
     adminId: 'temp-admin',
@@ -27,8 +27,9 @@ export const createRoom = functions.https.onCall(async (data: any) => {
   return { roomId, success: true };
 });
 
-export const joinRoom = functions.https.onCall(async (data: any) => {
-  const { roomId } = data;
+export const joinRoom = functions.https.onCall(async (payload: any) => {
+  console.log('roomId from data:', Object.keys(payload.data));
+  const { roomId } = payload.data;
 
   if (!roomId || typeof roomId !== 'string') {
     throw new functions.https.HttpsError('invalid-argument', 'Room ID is required');

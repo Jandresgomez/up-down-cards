@@ -1,3 +1,6 @@
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../firebase';
+
 export interface CreateRoomResponse {
   roomId: string;
   success: boolean;
@@ -8,26 +11,15 @@ export interface JoinRoomResponse {
   error?: string;
 }
 
-// Mock API calls - will be replaced with real server calls later
+const createRoomFn = httpsCallable<void, CreateRoomResponse>(functions, 'createRoom');
+const joinRoomFn = httpsCallable<{ roomId: string }, JoinRoomResponse>(functions, 'joinRoom');
+
 export async function createNewRoom(): Promise<CreateRoomResponse> {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  // Generate mock room ID
-  const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-  
-  return {
-    roomId,
-    success: true
-  };
+  const result = await createRoomFn();
+  return result.data;
 }
 
 export async function joinRoom(roomId: string): Promise<JoinRoomResponse> {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 300));
-  
-  // Mock validation - for now just check if not blank
-  // Later this will check against server
   if (!roomId || roomId.trim() === '') {
     return {
       success: false,
@@ -35,7 +27,6 @@ export async function joinRoom(roomId: string): Promise<JoinRoomResponse> {
     };
   }
   
-  return {
-    success: true
-  };
+  const result = await joinRoomFn({ roomId });
+  return result.data;
 }
