@@ -4,13 +4,13 @@ import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 
 const firebaseConfig = {
-  projectId: "up-down-cards",
-  appId: "1:1043296434823:web:78e37686e2ae022ecb9622",
-  storageBucket: "up-down-cards.firebasestorage.app",
-  apiKey: "AIzaSyCmfvbcaokJ1S9MmKYsVBrS_rdKGi8ez1w",
-  authDomain: "up-down-cards.firebaseapp.com",
-  messagingSenderId: "1043296434823",
-  measurementId: "G-KZSTHC3WK6"
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);
