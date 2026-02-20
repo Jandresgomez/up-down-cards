@@ -4,8 +4,15 @@ A multiplayer card game built with a client-server architecture using Firebase C
 
 ## Documentation
 
-Implementation details and feature documentation can be found in the `/docs` folder, read these to get context on the application life-cycle:
-- [001 - Player ID Management & Real-time Room Sync](./docs/001-player-id-and-realtime-sync.md)
+### Game Information
+- [Game Logic](./docs/info/game-logic.md) - Complete rules and gameplay
+
+### Development Documentation
+Implementation details and feature documentation can be found in `/docs/dev/`:
+- [001 - Player ID Management & Real-time Room Sync](./docs/dev/001-player-id-and-realtime-sync.md)
+- [002 - State Machine Implementation](./docs/dev/002-state-machine.md)
+- [002 - State Machine Summary](./docs/dev/002-state-machine-summary.md)
+- [002 - State Machine Quick Reference](./docs/dev/002-state-machine-quick-ref.md)
 
 ## Project Overview
 
@@ -16,7 +23,7 @@ Up-Down Cards is a web-based multiplayer card game where players can create or j
 ### Client-Server Model
 
 - **Client**: Web application built with PixiJS and TypeScript
-- **Server**: Firebase Cloud Functions (Node.js 18)
+- **Server**: Firebase Cloud Functions (Node.js 22)
 - **Database**: Cloud Firestore
 - **Hosting**: Firebase Hosting
 
