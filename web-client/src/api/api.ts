@@ -1,6 +1,7 @@
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../firebase';
 import { getPlayerId } from '../utils/playerId';
+import { Card } from '../types/game-types';
 
 export interface CreateRoomResponse {
   roomId: string;
@@ -20,16 +21,35 @@ export interface UpdateRoomSettingsResponse {
 export interface StartGameResponse {
   success: boolean;
   error?: string;
+  status?: string;
 }
 
-const createRoomFn = httpsCallable<{ playerId: string }, CreateRoomResponse>(functions, 'createRoom');
+export interface PlaceBetResponse {
+  success: boolean;
+  error?: string;
+}
+
+export interface PlayCardResponse {
+  success: boolean;
+  error?: string;
+}
+
+export interface ContinueGameResponse {
+  success: boolean;
+  error?: string;
+}
+
+const createRoomFn = httpsCallable<{ playerId: string; numberOfRounds?: number }, CreateRoomResponse>(functions, 'createRoom');
 const joinRoomFn = httpsCallable<{ roomId: string; playerId: string }, JoinRoomResponse>(functions, 'joinRoom');
 const updateRoomSettingsFn = httpsCallable<{ roomId: string; playerId: string; numberOfRounds?: number; maxPlayers?: number }, UpdateRoomSettingsResponse>(functions, 'updateRoomSettings');
 const startGameFn = httpsCallable<{ roomId: string; playerId: string }, StartGameResponse>(functions, 'startGame');
+const placeBetFn = httpsCallable<{ playerId: string; bet: number }, PlaceBetResponse>(functions, 'placeBet');
+const playCardFn = httpsCallable<{ playerId: string; card: Card }, PlayCardResponse>(functions, 'playCard');
+const continueGameFn = httpsCallable<{ playerId: string }, ContinueGameResponse>(functions, 'continueGame');
 
-export async function createNewRoom(): Promise<CreateRoomResponse> {
+export async function createNewRoom(numberOfRounds: number = 5): Promise<CreateRoomResponse> {
   const playerId = getPlayerId();
-  const result = await createRoomFn({ playerId });
+  const result = await createRoomFn({ playerId, numberOfRounds });
   return result.data;
 }
 
@@ -55,5 +75,23 @@ export async function updateRoomSettings(roomId: string, settings: { numberOfRou
 export async function startGame(roomId: string): Promise<StartGameResponse> {
   const playerId = getPlayerId();
   const result = await startGameFn({ roomId, playerId });
+  return result.data;
+}
+
+export async function placeBet(bet: number): Promise<PlaceBetResponse> {
+  const playerId = getPlayerId();
+  const result = await placeBetFn({ playerId, bet });
+  return result.data;
+}
+
+export async function playCard(card: Card): Promise<PlayCardResponse> {
+  const playerId = getPlayerId();
+  const result = await playCardFn({ playerId, card });
+  return result.data;
+}
+
+export async function continueGame(): Promise<ContinueGameResponse> {
+  const playerId = getPlayerId();
+  const result = await continueGameFn({ playerId });
   return result.data;
 }

@@ -11,6 +11,7 @@ export class WaitingRoomScreen {
   private onStartGame: () => void;
   private roundsText: Text;
   private playersText: Text;
+  private maxRoundsText: Text | null = null;
 
   constructor(
     roomId: string,
@@ -25,7 +26,7 @@ export class WaitingRoomScreen {
     this.isAdmin = isAdmin;
     this.numberOfPlayers = numberOfPlayers;
     this.numberOfRounds = numberOfRounds;
-    this.maxPlayers = 4;
+    this.maxPlayers = 6;
     this.maxRounds = maxRounds;
     this.onRoundsChange = onRoundsChange;
     this.onStartGame = onStartGame;
@@ -122,14 +123,14 @@ export class WaitingRoomScreen {
     this.container.addChild(increaseBtn);
 
     // Max rounds info
-    const maxRoundsText = new Text({
+    this.maxRoundsText = new Text({
       text: `(Max: ${this.maxRounds})`,
       style: { fontSize: 18, fill: 0xaaaaaa }
     });
-    maxRoundsText.anchor.set(0.5);
-    maxRoundsText.x = window.innerWidth / 2;
-    maxRoundsText.y = 440;
-    this.container.addChild(maxRoundsText);
+    this.maxRoundsText.anchor.set(0.5);
+    this.maxRoundsText.x = window.innerWidth / 2;
+    this.maxRoundsText.y = 440;
+    this.container.addChild(this.maxRoundsText);
 
     // Start button
     const startBtn = this.createButton('Start Game', window.innerWidth / 2 - 150, 500);
@@ -211,11 +212,15 @@ export class WaitingRoomScreen {
     this.playersText.text = `Players: ${this.numberOfPlayers} / ${this.maxPlayers}`;
   }
 
-  updateSettings(rounds: number, maxPlayers: number): void {
+  updateSettings(rounds: number, maxPlayers: number, playerCount: number): void {
     this.numberOfRounds = rounds;
     this.maxPlayers = maxPlayers;
+    this.maxRounds = Math.floor(51 / playerCount);
     this.roundsText.text = `${this.numberOfRounds}`;
     this.playersText.text = `Players: ${this.numberOfPlayers} / ${this.maxPlayers}`;
+    if (this.maxRoundsText) {
+      this.maxRoundsText.text = `(Max: ${this.maxRounds})`;
+    }
   }
 
   getContainer(): Container {

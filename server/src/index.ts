@@ -7,21 +7,21 @@ admin.initializeApp();
 const db = admin.firestore();
 
 // Export game functions
-export { startGame as startGameV2, placeBet, playCard } from './game-functions';
+export { startGame as startGameV2, placeBet, playCard, continueGame } from './game-functions';
 
 function generateRoomId(): string {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
 export const createRoom = functions.https.onCall(async (request) => {
-  const { playerId, maxRoundSize = 5 } = request.data;
-  
+  const { playerId, numberOfRounds = 5 } = request.data;
+
   if (!playerId) {
     throw new functions.https.HttpsError('invalid-argument', 'Player ID is required');
   }
 
   const roomId = generateRoomId();
-  
+
   // Create player state
   const playerState: PlayerState = {
     id: playerId,
@@ -37,8 +37,8 @@ export const createRoom = functions.https.onCall(async (request) => {
     id: roomId,
     adminId: playerId,
     status: 'waiting',
-    maxPlayers: 4,
-    maxRoundSize,
+    maxPlayers: 6,
+    numberOfRounds,
     players: [playerState],
     playerOrder: [playerId],
     currentRound: null,
@@ -51,7 +51,7 @@ export const createRoom = functions.https.onCall(async (request) => {
 
   // Store in games collection
   await db.collection('games').doc(roomId).set(gameState);
-  
+
   // Also create player document
   await db.collection('players').doc(playerId).set({
     id: playerId,
@@ -74,7 +74,7 @@ export const joinRoom = functions.https.onCall(async (request) => {
   }
 
   const gameRef = db.collection('games').doc(roomId);
-  
+
   try {
     await db.runTransaction(async (transaction) => {
       const gameDoc = await transaction.get(gameRef);
@@ -127,7 +127,7 @@ export const joinRoom = functions.https.onCall(async (request) => {
 });
 
 export const updateRoomSettings = functions.https.onCall(async (request) => {
-  const { roomId, playerId, maxRoundSize, maxPlayers } = request.data;
+  const { roomId, playerId, numberOfRounds, maxPlayers } = request.data;
 
   if (!roomId || !playerId) {
     throw new functions.https.HttpsError('invalid-argument', 'Room ID and Player ID are required');
@@ -151,12 +151,12 @@ export const updateRoomSettings = functions.https.onCall(async (request) => {
   }
 
   const updates: Partial<GameState> = {};
-  if (maxRoundSize !== undefined) {
+  if (numberOfRounds !== undefined) {
     const maxPossible = Math.floor(51 / game.players.length);
-    if (maxRoundSize > maxPossible) {
-      return { success: false, error: `Max round size cannot exceed ${maxPossible} with ${game.players.length} players` };
+    if (numberOfRounds > maxPossible) {
+      return { success: false, error: `Number of rounds cannot exceed ${maxPossible} with ${game.players.length} players` };
     }
-    updates.maxRoundSize = maxRoundSize;
+    updates.numberOfRounds = numberOfRounds;
   }
   if (maxPlayers !== undefined) updates.maxPlayers = maxPlayers;
 
@@ -173,7 +173,30 @@ export const startGame = functions.https.onCall(async (request) => {
     throw new functions.https.HttpsError('invalid-argument', 'Room ID and Player ID are required');
   }
 
-  // Redirect to new game state machine
-  const { startGame: startGameV2 } = require('./game-functions');
-  return startGameV2({ roomId, playerId }, {} as any);
+  const gameRef = db.collection('games').doc(roomId);
+
+  return db.runTransaction(async (transaction) => {
+    const gameDoc = await transaction.get(gameRef);
+
+    if (!gameDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Game not found');
+    }
+
+    let state = gameDoc.data() as GameState;
+
+    try {
+      const { GameStateMachine } = require('./state-machine');
+      const action = { type: 'START_GAME', playerId };
+      state = GameStateMachine.processAction(state, action);
+
+      // Auto-transition to betting
+      state = GameStateMachine.autoTransition(state);
+
+      transaction.set(gameRef, JSON.parse(JSON.stringify(state)));
+
+      return { success: true, status: state.status };
+    } catch (error: any) {
+      throw new functions.https.HttpsError('failed-precondition', error.message);
+    }
+  });
 });

@@ -13,6 +13,7 @@ Implementation details and feature documentation can be found in `/docs/dev/`:
 - [002 - State Machine Implementation](./docs/dev/002-state-machine.md)
 - [002 - State Machine Summary](./docs/dev/002-state-machine-summary.md)
 - [002 - State Machine Quick Reference](./docs/dev/002-state-machine-quick-ref.md)
+- [003 - Web Client Integration](./docs/dev/003-web-client-integration.md)
 
 ## Project Overview
 

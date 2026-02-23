@@ -46,7 +46,6 @@ export interface HandState {
   pinta: Suit | null;
   currentPlayerIndex: number;
   handOrder: string[];
-  playersReady?: string[];  // For hand_complete ready check
 }
 
 export interface RoundResult {
@@ -72,7 +71,6 @@ export interface RoundState {
   handsPlayed: number;
   currentHand: HandState | null;
   completedHands: HandResult[];
-  playersReady?: string[];  // For round_complete ready check
 }
 
 export interface GameState {
@@ -91,8 +89,17 @@ export interface GameState {
   completedAt: number | null;
 }
 
-export type PlayerAction = 
-  | { type: 'START_GAME'; playerId: string }
-  | { type: 'PLACE_BET'; playerId: string; bet: number }
-  | { type: 'PLAY_CARD'; playerId: string; card: Card }
-  | { type: 'CONTINUE'; playerId: string };
+// Display helpers
+export const SUIT_SYMBOLS: Record<Suit, string> = {
+  spades: '♠',
+  hearts: '♥',
+  diamonds: '♦',
+  clubs: '♣'
+};
+
+export const SUIT_COLORS: Record<Suit, number> = {
+  spades: 0x000000,
+  hearts: 0xff0000,
+  diamonds: 0xff0000,
+  clubs: 0x000000
+};

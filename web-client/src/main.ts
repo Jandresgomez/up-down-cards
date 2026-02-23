@@ -1,18 +1,19 @@
 import { Application } from 'pixi.js';
-import { GameState } from './state/GameState';
 import { WelcomeScreen } from './scenes/WelcomeScreen';
 import { WaitingRoomScreen } from './scenes/WaitingRoomScreen';
 import { GameScreen } from './scenes/GameScreen';
 import { createNewRoom, joinRoom, updateRoomSettings, startGame } from './api/api';
-import { subscribeToRoom, RoomData } from './api/roomSync';
+import { subscribeToGameState } from './api/gameStateListener';
 import { getPlayerId } from './utils/playerId';
+import { GameState } from './types/game-types';
 import { Unsubscribe } from 'firebase/firestore';
 
 const app = new Application();
-const gameState = new GameState();
 
 let currentScreen: WelcomeScreen | WaitingRoomScreen | GameScreen | null = null;
-let roomUnsubscribe: Unsubscribe | null = null;
+let gameStateUnsubscribe: Unsubscribe | null = null;
+let currentRoomId: string | null = null;
+let isAdmin: boolean = false;
 
 // Initialize player ID on load
 const playerId = getPlayerId();
@@ -27,26 +28,29 @@ await app.init({
 
 document.body.appendChild(app.canvas);
 
-function handleRoomUpdate(room: RoomData): void {
-  // Update game state with room data
-  gameState.setNumberOfPlayers(room.players.length);
-  gameState.setNumberOfRounds(room.numberOfRounds);
-  gameState.setMaxPlayers(room.maxPlayers);
-  gameState.setCurrentRound(room.currentRound);
+function handleGameStateUpdate(gameState: GameState): void {
+  console.log('Game state updated:', gameState.status);
 
-  // Check if current player is admin
-  const isAdmin = room.players.find(p => p.id === playerId)?.isAdmin || false;
+  // Determine if we're admin
+  isAdmin = gameState.adminId === playerId;
 
-  // Update waiting room if it's the current screen
-  if (currentScreen instanceof WaitingRoomScreen) {
-    currentScreen.updatePlayers(room.players.length);
-    currentScreen.updateSettings(room.numberOfRounds, room.maxPlayers);
-  }
-
-  // Transition to game screen if game started
-  if (room.status === 'playing' && gameState.getCurrentScreen() === 'waiting') {
-    gameState.startGame();
-    showGameScreen();
+  // Handle screen transitions
+  if (gameState.status === 'waiting') {
+    if (!(currentScreen instanceof WaitingRoomScreen)) {
+      showWaitingRoomScreen(gameState);
+    } else {
+      // Update existing waiting room
+      currentScreen.updatePlayers(gameState.players.length);
+      currentScreen.updateSettings(gameState.numberOfRounds, gameState.maxPlayers, gameState.players.length);
+    }
+  } else if (gameState.status !== 'waiting') {
+    // Game has started or is in progress
+    if (!(currentScreen instanceof GameScreen)) {
+      showGameScreen(gameState);
+    } else {
+      // Update existing game screen
+      currentScreen.updateGameState(gameState);
+    }
   }
 }
 
@@ -55,10 +59,10 @@ function showWelcomeScreen(): void {
     currentScreen.destroy();
   }
 
-  // Unsubscribe from room updates
-  if (roomUnsubscribe) {
-    roomUnsubscribe();
-    roomUnsubscribe = null;
+  // Unsubscribe from game state updates
+  if (gameStateUnsubscribe) {
+    gameStateUnsubscribe();
+    gameStateUnsubscribe = null;
   }
 
   const welcomeScreen = new WelcomeScreen(
@@ -68,22 +72,32 @@ function showWelcomeScreen(): void {
         welcomeScreen.showError(response.error || 'Failed to join room');
         return;
       }
-      gameState.joinRoom(roomNumber, false);
 
-      // Subscribe to room updates
-      roomUnsubscribe = subscribeToRoom(roomNumber, gameState, handleRoomUpdate);
+      currentRoomId = roomNumber;
 
-      showWaitingRoomScreen();
+      // Subscribe to game state updates
+      gameStateUnsubscribe = subscribeToGameState(
+        roomNumber,
+        handleGameStateUpdate,
+        (error) => {
+          console.error('Game state subscription error:', error);
+          welcomeScreen.showError('Lost connection to game');
+        }
+      );
     },
     async () => {
       const response = await createNewRoom();
       if (response.success) {
-        gameState.createRoom(response.roomId);
+        currentRoomId = response.roomId;
 
-        // Subscribe to room updates
-        roomUnsubscribe = subscribeToRoom(response.roomId, gameState, handleRoomUpdate);
-
-        showWaitingRoomScreen();
+        // Subscribe to game state updates
+        gameStateUnsubscribe = subscribeToGameState(
+          response.roomId,
+          handleGameStateUpdate,
+          (error) => {
+            console.error('Game state subscription error:', error);
+          }
+        );
       }
     }
   );
@@ -92,28 +106,27 @@ function showWelcomeScreen(): void {
   currentScreen = welcomeScreen;
 }
 
-function showWaitingRoomScreen(): void {
+function showWaitingRoomScreen(gameState: GameState): void {
   if (currentScreen) {
     currentScreen.destroy();
   }
 
-  const roomId = gameState.getRoomNumber()!;
   const waitingRoom = new WaitingRoomScreen(
-    roomId,
-    gameState.isRoomAdmin(),
-    gameState.getNumberOfPlayers(),
-    gameState.getNumberOfRounds(),
-    gameState.getMaxRounds(),
+    gameState.id,
+    isAdmin,
+    gameState.players.length,
+    gameState.numberOfRounds,
+    Math.floor(51 / gameState.players.length),
     async (rounds) => {
       // Update settings on server
-      if (gameState.isRoomAdmin()) {
-        await updateRoomSettings(roomId, { numberOfRounds: rounds });
+      if (isAdmin) {
+        await updateRoomSettings(gameState.id, { numberOfRounds: rounds });
       }
     },
     async () => {
       // Start game on server
-      if (gameState.isRoomAdmin()) {
-        const response = await startGame(roomId);
+      if (isAdmin) {
+        const response = await startGame(gameState.id);
         if (!response.success) {
           console.error('Failed to start game:', response.error);
         }
@@ -125,18 +138,13 @@ function showWaitingRoomScreen(): void {
   currentScreen = waitingRoom;
 }
 
-function showGameScreen(): void {
+function showGameScreen(gameState: GameState): void {
   if (currentScreen) {
     currentScreen.destroy();
   }
 
-  const roomId = gameState.getRoomNumber()!;
-  const gameScreen = new GameScreen(
-    roomId,
-    gameState.getCurrentRound(),
-    gameState.getNumberOfRounds()
-  );
-  gameScreen.updateHand(gameState.getPlayerHand());
+  const gameScreen = new GameScreen(gameState.id);
+  gameScreen.updateGameState(gameState);
 
   app.stage.addChild(gameScreen.getContainer());
   currentScreen = gameScreen;

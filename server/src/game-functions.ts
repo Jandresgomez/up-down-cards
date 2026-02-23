@@ -7,7 +7,7 @@ const db = admin.firestore();
 
 async function handlePlayerAction(action: PlayerAction) {
   const { playerId } = action;
-  
+
   if (!playerId) {
     throw new functions.https.HttpsError('invalid-argument', 'Player ID required');
   }
@@ -24,7 +24,7 @@ async function handlePlayerAction(action: PlayerAction) {
   // Use transaction to ensure atomic state updates
   return db.runTransaction(async (transaction) => {
     const gameDoc = await transaction.get(gameRef);
-    
+
     if (!gameDoc.exists) {
       throw new functions.https.HttpsError('not-found', 'Game not found');
     }
@@ -34,12 +34,12 @@ async function handlePlayerAction(action: PlayerAction) {
     // Process the action
     try {
       state = GameStateMachine.processAction(state, action);
-      
+
       // Auto-transition through states that don't need player input
       let previousStatus = state.status;
       let iterations = 0;
       const maxIterations = 10;
-      
+
       while (iterations < maxIterations) {
         state = GameStateMachine.autoTransition(state);
         if (state.status === previousStatus) break;
@@ -48,7 +48,7 @@ async function handlePlayerAction(action: PlayerAction) {
       }
 
       // Update game state
-      transaction.update(gameRef, state as any);
+      transaction.set(gameRef, JSON.parse(JSON.stringify(state)));
 
       return {
         success: true,
@@ -81,7 +81,7 @@ export const startGame = functions.https.onCall(async (request) => {
 
   return db.runTransaction(async (transaction) => {
     const gameDoc = await transaction.get(gameRef);
-    
+
     if (!gameDoc.exists) {
       throw new functions.https.HttpsError('not-found', 'Game not found');
     }
@@ -91,11 +91,11 @@ export const startGame = functions.https.onCall(async (request) => {
     try {
       const action: PlayerAction = { type: 'START_GAME', playerId };
       state = GameStateMachine.processAction(state, action);
-      
+
       // Auto-transition to betting
       state = GameStateMachine.autoTransition(state);
 
-      transaction.update(gameRef, state as any);
+      transaction.set(gameRef, JSON.parse(JSON.stringify(state)));
 
       return { success: true, status: state.status };
     } catch (error: any) {
@@ -123,5 +123,16 @@ export const playCard = functions.https.onCall(async (request) => {
   }
 
   const action: PlayerAction = { type: 'PLAY_CARD', playerId, card };
+  return handlePlayerAction(action);
+});
+
+export const continueGame = functions.https.onCall(async (request) => {
+  const { playerId } = request.data;
+
+  if (!playerId) {
+    throw new functions.https.HttpsError('invalid-argument', 'Player ID required');
+  }
+
+  const action: PlayerAction = { type: 'CONTINUE', playerId };
   return handlePlayerAction(action);
 });

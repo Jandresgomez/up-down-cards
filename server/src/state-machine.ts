@@ -2,7 +2,7 @@ import { GameState, PlayerAction, GameStatus, RoundState, HandState, PlayerState
 import { createDeck, shuffleDeck, getRankValue } from './deck';
 
 export class GameStateMachine {
-  
+
   // Initialize game from waiting room
   static startGame(state: GameState, action: PlayerAction): GameState {
     if (action.type !== 'START_GAME') throw new Error('Invalid action');
@@ -12,15 +12,15 @@ export class GameStateMachine {
 
     // Generate round sequence [1,2,3...N...3,2,1]
     const roundSequence: number[] = [];
-    for (let i = 1; i <= state.maxRoundSize; i++) roundSequence.push(i);
-    for (let i = state.maxRoundSize - 1; i >= 1; i--) roundSequence.push(i);
+    for (let i = 1; i <= state.numberOfRounds; i++) roundSequence.push(i);
+    for (let i = state.numberOfRounds - 1; i >= 1; i--) roundSequence.push(i);
 
     // Randomly select starting player (PG1)
     const startingPlayerIndex = Math.floor(Math.random() * state.players.length);
 
-    return {
+    const updatedState = {
       ...state,
-      status: 'dealing',
+      status: 'dealing' as GameStatus,
       roundSequence,
       startedAt: Date.now(),
       playerOrder: state.players.map(p => p.id),
@@ -31,20 +31,27 @@ export class GameStateMachine {
         bet: null,
         handsWon: 0,
         totalScore: 0
-      })),
-      currentRound: this.initializeRound(state, 0, state.players[startingPlayerIndex].id)
+      }))
+    };
+
+    const { round, players } = this.initializeRound(updatedState, 0, state.players[startingPlayerIndex].id);
+
+    return {
+      ...updatedState,
+      players,
+      currentRound: round
     };
   }
 
   // Initialize a new round
-  private static initializeRound(state: GameState, roundIndex: number, startingPlayerId: string): RoundState {
+  private static initializeRound(state: GameState, roundIndex: number, startingPlayerId: string): { round: RoundState; players: PlayerState[] } {
     const roundNumber = state.roundSequence[roundIndex];
     const cardsPerPlayer = roundNumber;
-    
+
     // Deal cards
     const deck = shuffleDeck(createDeck());
     const mesa = deck.pop()!;
-    
+
     // Deal to players
     const updatedPlayers = state.players.map(p => ({
       ...p,
@@ -52,9 +59,6 @@ export class GameStateMachine {
       bet: null,
       handsWon: 0
     }));
-
-    // Update state with dealt cards
-    Object.assign(state, { players: updatedPlayers });
 
     // Determine betting order starting from PS1
     const startIdx = state.playerOrder.indexOf(startingPlayerId);
@@ -64,16 +68,19 @@ export class GameStateMachine {
     ];
 
     return {
-      roundNumber,
-      roundIndex,
-      cardsPerPlayer,
-      mesa,
-      startingPlayerId,
-      bettingOrder,
-      currentBettingIndex: 0,
-      handsPlayed: 0,
-      currentHand: null,
-      completedHands: []
+      players: updatedPlayers,
+      round: {
+        roundNumber,
+        roundIndex,
+        cardsPerPlayer,
+        mesa,
+        startingPlayerId,
+        bettingOrder,
+        currentBettingIndex: 0,
+        handsPlayed: 0,
+        currentHand: null,
+        completedHands: []
+      }
     };
   }
 
@@ -91,7 +98,7 @@ export class GameStateMachine {
 
     const { currentRound } = state;
     const expectedPlayerId = currentRound.bettingOrder[currentRound.currentBettingIndex];
-    
+
     if (action.playerId !== expectedPlayerId) throw new Error('Not your turn to bet');
     if (action.bet < 0 || action.bet > currentRound.cardsPerPlayer) throw new Error('Invalid bet');
 
@@ -180,10 +187,10 @@ export class GameStateMachine {
     if (action.playerId !== expectedPlayerId) throw new Error('Not your turn');
 
     const player = state.players.find(p => p.id === action.playerId)!;
-    const cardIndex = player.hand.findIndex(c => 
+    const cardIndex = player.hand.findIndex(c =>
       c.suit === action.card.suit && c.rank === action.card.rank
     );
-    
+
     if (cardIndex === -1) throw new Error('Card not in hand');
 
     // Validate suit following rules
@@ -212,7 +219,7 @@ export class GameStateMachine {
     const nextPlayerIndex = currentHand.currentPlayerIndex + 1;
     const handComplete = nextPlayerIndex >= currentHand.handOrder.length;
 
-    return {
+    const updatedState = {
       ...state,
       players: updatedPlayers,
       currentRound: {
@@ -225,8 +232,15 @@ export class GameStateMachine {
           currentPlayerIndex: nextPlayerIndex
         }
       },
-      status: handComplete ? 'hand_complete' : 'playing_hand'
+      status: handComplete ? 'hand_complete' : 'playing_hand' as GameStatus
     };
+
+    // If hand is complete, process the winner
+    if (handComplete) {
+      return this.completeHand(updatedState);
+    }
+
+    return updatedState;
   }
 
   // Determine hand winner
@@ -264,18 +278,123 @@ export class GameStateMachine {
       timestamp: Date.now()
     };
 
-    const roundComplete = currentRound.handsPlayed + 1 >= currentRound.cardsPerPlayer;
-
+    // Always go to hand_complete first, regardless of whether round is done
     return {
       ...state,
       players: updatedPlayers,
       currentRound: {
         ...currentRound,
         handsPlayed: currentRound.handsPlayed + 1,
-        currentHand: null,
+        currentHand: {
+          ...currentHand,
+          playersReady: []  // Initialize ready check for hand
+        },
         completedHands: [...currentRound.completedHands, handResult]
       },
-      status: roundComplete ? 'round_complete' : 'playing_hand'
+      status: 'hand_complete'
+    };
+  }
+
+  // Handle continue action (ready check)
+  static handleContinue(state: GameState, action: PlayerAction): GameState {
+    if (action.type !== 'CONTINUE') throw new Error('Invalid action');
+
+    if (state.status === 'hand_complete') {
+      return this.handleHandContinue(state, action);
+    } else if (state.status === 'round_complete') {
+      return this.handleRoundContinue(state, action);
+    }
+
+    throw new Error('Continue action only valid in hand_complete or round_complete');
+  }
+
+  private static handleHandContinue(state: GameState, action: PlayerAction): GameState {
+    if (!state.currentRound?.currentHand) throw new Error('No active hand');
+
+    const currentHand = state.currentRound.currentHand;
+    const playersReady = currentHand.playersReady || [];
+
+    // Check if player already ready
+    if (playersReady.includes(action.playerId)) {
+      return state; // Already ready, no change
+    }
+
+    const updatedReady = [...playersReady, action.playerId];
+    const allReady = updatedReady.length >= state.players.length;
+
+    if (allReady) {
+      // All players ready, check if round is complete
+      const roundComplete = state.currentRound.handsPlayed >= state.currentRound.cardsPerPlayer;
+      
+      if (roundComplete) {
+        // Calculate and update scores before showing round_complete
+        const updatedPlayers = state.players.map(p => {
+          const points = p.bet === p.handsWon ? 10 + 2 * p.handsWon : 0;
+          return { ...p, totalScore: p.totalScore + points };
+        });
+        
+        // Transition to round_complete with updated scores
+        return {
+          ...state,
+          players: updatedPlayers,
+          currentRound: {
+            ...state.currentRound,
+            currentHand: null,
+            playersReady: []  // Initialize ready check for round
+          },
+          status: 'round_complete'
+        };
+      }
+      
+      // More hands to play, transition to next hand
+      return {
+        ...state,
+        currentRound: {
+          ...state.currentRound,
+          currentHand: null
+        },
+        status: 'playing_hand'
+      };
+    }
+
+    // Update ready list
+    return {
+      ...state,
+      currentRound: {
+        ...state.currentRound,
+        currentHand: {
+          ...currentHand,
+          playersReady: updatedReady
+        }
+      }
+    };
+  }
+
+  private static handleRoundContinue(state: GameState, action: PlayerAction): GameState {
+    if (!state.currentRound) throw new Error('No active round');
+
+    const playersReady = state.currentRound.playersReady || [];
+
+    // Check if player already ready
+    if (playersReady.includes(action.playerId)) {
+      return state; // Already ready, no change
+    }
+
+    const updatedReady = [...playersReady, action.playerId];
+    const allReady = updatedReady.length >= state.players.length;
+
+    if (allReady) {
+      // All players ready, complete the round
+      return this.completeRound(state);
+    }
+
+    // Update ready list
+    return {
+      ...state,
+      currentRound: {
+        ...state.currentRound,
+        playersReady: updatedReady
+      }
     };
   }
 
@@ -294,14 +413,14 @@ export class GameStateMachine {
     return getRankValue(card1.rank) - getRankValue(card2.rank);
   }
 
-  // Complete round and calculate scores
+  // Complete round and move to next round or end game
   static completeRound(state: GameState): GameState {
     if (state.status !== 'round_complete') throw new Error('Round not complete');
     if (!state.currentRound) throw new Error('No active round');
 
     const { currentRound } = state;
 
-    // Calculate scores
+    // Scores already calculated when transitioning to round_complete
     const scores = state.players.map(p => {
       const points = p.bet === p.handsWon ? 10 + 2 * p.handsWon : 0;
       return {
@@ -309,12 +428,6 @@ export class GameStateMachine {
         handsWon: p.handsWon,
         points
       };
-    });
-
-    // Update total scores
-    const updatedPlayers = state.players.map(p => {
-      const score = scores.find(s => s.playerId === p.id)!;
-      return { ...p, totalScore: p.totalScore + score.points };
     });
 
     const roundResult: RoundResult = {
@@ -335,7 +448,6 @@ export class GameStateMachine {
     if (gameComplete) {
       return {
         ...state,
-        players: updatedPlayers,
         status: 'game_complete',
         completedAt: Date.now(),
         completedRounds: [...state.completedRounds, roundResult],
@@ -347,16 +459,18 @@ export class GameStateMachine {
     const nextStartingPlayerIndex = nextRoundIndex % state.playerOrder.length;
     const nextStartingPlayerId = state.playerOrder[nextStartingPlayerIndex];
 
+    const { round: nextRound, players: playersWithCards } = this.initializeRound(
+      state,
+      nextRoundIndex,
+      nextStartingPlayerId
+    );
+
     return {
       ...state,
-      players: updatedPlayers,
+      players: playersWithCards,
       status: 'dealing',
       completedRounds: [...state.completedRounds, roundResult],
-      currentRound: this.initializeRound(
-        { ...state, players: updatedPlayers },
-        nextRoundIndex,
-        nextStartingPlayerId
-      )
+      currentRound: nextRound
     };
   }
 
@@ -369,6 +483,8 @@ export class GameStateMachine {
         return this.placeBet(state, action);
       case 'PLAY_CARD':
         return this.playCard(state, action);
+      case 'CONTINUE':
+        return this.handleContinue(state, action);
       default:
         throw new Error('Unknown action type');
     }
@@ -384,10 +500,6 @@ export class GameStateMachine {
           return this.startHand(state);
         }
         return state;
-      case 'hand_complete':
-        return this.completeHand(state);
-      case 'round_complete':
-        return this.completeRound(state);
       default:
         return state;
     }
