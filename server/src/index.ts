@@ -85,17 +85,18 @@ export const joinRoom = functions.https.onCall(async (request) => {
 
       const game = gameDoc.data() as GameState;
 
+      // Check if player already in room (allow rejoining)
+      if (game.players.some(p => p.id === playerId)) {
+        return; // Already in room, allow reconnection
+      }
+
+      // Only allow new players to join if room is waiting
       if (game.status !== 'waiting') {
-        throw new Error('Room is not accepting players');
+        throw new Error('Room is not accepting new players');
       }
 
       if (game.players.length >= game.maxPlayers) {
         throw new Error('Room is full');
-      }
-
-      // Check if player already in room
-      if (game.players.some(p => p.id === playerId)) {
-        return;
       }
 
       const playerState: PlayerState = {
@@ -199,4 +200,71 @@ export const startGame = functions.https.onCall(async (request) => {
       throw new functions.https.HttpsError('failed-precondition', error.message);
     }
   });
+});
+
+export const leaveRoom = functions.https.onCall(async (request) => {
+  const { roomId, playerId } = request.data;
+
+  if (!roomId || !playerId) {
+    throw new functions.https.HttpsError('invalid-argument', 'Room ID and Player ID are required');
+  }
+
+  const gameRef = db.collection('games').doc(roomId);
+  const gameDoc = await gameRef.get();
+
+  if (!gameDoc.exists) {
+    return { success: false, error: 'Room not found' };
+  }
+
+  const game = gameDoc.data() as GameState;
+
+  // Can't leave if game has started
+  if (game.status !== 'waiting') {
+    return { success: false, error: 'Cannot leave after game has started' };
+  }
+
+  // Remove player
+  const updatedPlayers = game.players.filter(p => p.id !== playerId);
+  const updatedPlayerOrder = game.playerOrder.filter(id => id !== playerId);
+
+  // If no players left or admin left, delete the room
+  if (updatedPlayers.length === 0 || game.adminId === playerId) {
+    await gameRef.delete();
+    return { success: true, roomDeleted: true };
+  }
+
+  // Update room with remaining players
+  await gameRef.update({
+    players: updatedPlayers,
+    playerOrder: updatedPlayerOrder
+  });
+
+  return { success: true, roomDeleted: false };
+});
+
+export const closeRoom = functions.https.onCall(async (request) => {
+  const { roomId, playerId } = request.data;
+
+  if (!roomId || !playerId) {
+    throw new functions.https.HttpsError('invalid-argument', 'Room ID and Player ID are required');
+  }
+
+  const gameRef = db.collection('games').doc(roomId);
+  const gameDoc = await gameRef.get();
+
+  if (!gameDoc.exists) {
+    return { success: false, error: 'Room not found' };
+  }
+
+  const game = gameDoc.data() as GameState;
+
+  // Only admin can close room
+  if (game.adminId !== playerId) {
+    return { success: false, error: 'Only admin can close the room' };
+  }
+
+  // Delete the room
+  await gameRef.delete();
+
+  return { success: true };
 });

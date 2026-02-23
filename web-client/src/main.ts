@@ -2,15 +2,16 @@ import { Application } from 'pixi.js';
 import { WelcomeScreen } from './scenes/WelcomeScreen';
 import { WaitingRoomScreen } from './scenes/WaitingRoomScreen';
 import { GameScreen } from './scenes/GameScreen';
+import { ReconnectScreen } from './scenes/ReconnectScreen';
 import { createNewRoom, joinRoom, updateRoomSettings, startGame } from './api/api';
 import { subscribeToGameState } from './api/gameStateListener';
-import { getPlayerId } from './utils/playerId';
+import { getPlayerId, getCurrentRoomId, setCurrentRoomId, clearCurrentRoomId } from './utils/playerId';
 import { GameState } from './types/game-types';
 import { Unsubscribe } from 'firebase/firestore';
 
 const app = new Application();
 
-let currentScreen: WelcomeScreen | WaitingRoomScreen | GameScreen | null = null;
+let currentScreen: WelcomeScreen | WaitingRoomScreen | GameScreen | ReconnectScreen | null = null;
 let gameStateUnsubscribe: Unsubscribe | null = null;
 let currentRoomId: string | null = null;
 let isAdmin: boolean = false;
@@ -34,6 +35,11 @@ function handleGameStateUpdate(gameState: GameState): void {
   // Determine if we're admin
   isAdmin = gameState.adminId === playerId;
 
+  // Clear room ID when game completes
+  if (gameState.status === 'game_complete') {
+    clearCurrentRoomId();
+  }
+
   // Handle screen transitions
   if (gameState.status === 'waiting') {
     if (!(currentScreen instanceof WaitingRoomScreen)) {
@@ -52,6 +58,16 @@ function handleGameStateUpdate(gameState: GameState): void {
       currentScreen.updateGameState(gameState);
     }
   }
+}
+
+function subscribeToRoom(roomId: string): void {
+  gameStateUnsubscribe = subscribeToGameState(
+    roomId,
+    handleGameStateUpdate,
+    (error) => {
+      console.error('Game state subscription error:', error);
+    }
+  );
 }
 
 function showWelcomeScreen(): void {
@@ -74,6 +90,7 @@ function showWelcomeScreen(): void {
       }
 
       currentRoomId = roomNumber;
+      setCurrentRoomId(roomNumber); // Save to localStorage
 
       // Subscribe to game state updates
       gameStateUnsubscribe = subscribeToGameState(
@@ -89,6 +106,7 @@ function showWelcomeScreen(): void {
       const response = await createNewRoom();
       if (response.success) {
         currentRoomId = response.roomId;
+        setCurrentRoomId(response.roomId); // Save to localStorage
 
         // Subscribe to game state updates
         gameStateUnsubscribe = subscribeToGameState(
@@ -131,6 +149,34 @@ function showWaitingRoomScreen(gameState: GameState): void {
           console.error('Failed to start game:', response.error);
         }
       }
+    },
+    async () => {
+      // Leave room
+      const { leaveRoom } = await import('./api/api');
+      const response = await leaveRoom(gameState.id);
+      if (response.success) {
+        clearCurrentRoomId();
+        if (gameStateUnsubscribe) {
+          gameStateUnsubscribe();
+          gameStateUnsubscribe = null;
+        }
+        showWelcomeScreen();
+      }
+    },
+    async () => {
+      // Close room (admin only)
+      if (isAdmin) {
+        const { closeRoom } = await import('./api/api');
+        const response = await closeRoom(gameState.id);
+        if (response.success) {
+          clearCurrentRoomId();
+          if (gameStateUnsubscribe) {
+            gameStateUnsubscribe();
+            gameStateUnsubscribe = null;
+          }
+          showWelcomeScreen();
+        }
+      }
     }
   );
 
@@ -156,5 +202,42 @@ window.addEventListener('resize', () => {
   }
 });
 
-// Start with welcome screen
-showWelcomeScreen();
+function showReconnectScreen(roomId: string): void {
+  if (currentScreen) {
+    currentScreen.destroy();
+  }
+
+  const reconnectScreen = new ReconnectScreen(
+    roomId,
+    async () => {
+      // Reconnect
+      const response = await joinRoom(roomId);
+      if (response.success) {
+        currentRoomId = roomId;
+        subscribeToRoom(roomId);
+      } else {
+        console.log('Failed to rejoin room:', response.error);
+        clearCurrentRoomId();
+        showWelcomeScreen();
+      }
+    },
+    () => {
+      // Main menu
+      clearCurrentRoomId();
+      showWelcomeScreen();
+    }
+  );
+
+  app.stage.addChild(reconnectScreen.getContainer());
+  currentScreen = reconnectScreen;
+}
+
+// Check for existing room on load
+const savedRoomId = getCurrentRoomId();
+if (savedRoomId) {
+  console.log('Found saved room:', savedRoomId);
+  showReconnectScreen(savedRoomId);
+} else {
+  // Start with welcome screen
+  showWelcomeScreen();
+}

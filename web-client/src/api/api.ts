@@ -39,6 +39,17 @@ export interface ContinueGameResponse {
   error?: string;
 }
 
+export interface LeaveRoomResponse {
+  success: boolean;
+  error?: string;
+  roomDeleted?: boolean;
+}
+
+export interface CloseRoomResponse {
+  success: boolean;
+  error?: string;
+}
+
 const createRoomFn = httpsCallable<{ playerId: string; numberOfRounds?: number }, CreateRoomResponse>(functions, 'createRoom');
 const joinRoomFn = httpsCallable<{ roomId: string; playerId: string }, JoinRoomResponse>(functions, 'joinRoom');
 const updateRoomSettingsFn = httpsCallable<{ roomId: string; playerId: string; numberOfRounds?: number; maxPlayers?: number }, UpdateRoomSettingsResponse>(functions, 'updateRoomSettings');
@@ -46,6 +57,8 @@ const startGameFn = httpsCallable<{ roomId: string; playerId: string }, StartGam
 const placeBetFn = httpsCallable<{ playerId: string; bet: number }, PlaceBetResponse>(functions, 'placeBet');
 const playCardFn = httpsCallable<{ playerId: string; card: Card }, PlayCardResponse>(functions, 'playCard');
 const continueGameFn = httpsCallable<{ playerId: string }, ContinueGameResponse>(functions, 'continueGame');
+const leaveRoomFn = httpsCallable<{ roomId: string; playerId: string }, LeaveRoomResponse>(functions, 'leaveRoom');
+const closeRoomFn = httpsCallable<{ roomId: string; playerId: string }, CloseRoomResponse>(functions, 'closeRoom');
 
 export async function createNewRoom(numberOfRounds: number = 5): Promise<CreateRoomResponse> {
   const playerId = getPlayerId();
@@ -93,5 +106,17 @@ export async function playCard(card: Card): Promise<PlayCardResponse> {
 export async function continueGame(): Promise<ContinueGameResponse> {
   const playerId = getPlayerId();
   const result = await continueGameFn({ playerId });
+  return result.data;
+}
+
+export async function leaveRoom(roomId: string): Promise<LeaveRoomResponse> {
+  const playerId = getPlayerId();
+  const result = await leaveRoomFn({ roomId, playerId });
+  return result.data;
+}
+
+export async function closeRoom(roomId: string): Promise<CloseRoomResponse> {
+  const playerId = getPlayerId();
+  const result = await closeRoomFn({ roomId, playerId });
   return result.data;
 }

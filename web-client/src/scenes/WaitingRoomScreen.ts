@@ -9,6 +9,8 @@ export class WaitingRoomScreen {
   private maxRounds: number;
   private onRoundsChange: (rounds: number) => void;
   private onStartGame: () => void;
+  private onLeaveRoom: () => void;
+  private onCloseRoom: () => void;
   private roundsText: Text;
   private playersText: Text;
   private maxRoundsText: Text | null = null;
@@ -20,7 +22,9 @@ export class WaitingRoomScreen {
     numberOfRounds: number,
     maxRounds: number,
     onRoundsChange: (rounds: number) => void,
-    onStartGame: () => void
+    onStartGame: () => void,
+    onLeaveRoom: () => void,
+    onCloseRoom: () => void
   ) {
     this.container = new Container();
     this.isAdmin = isAdmin;
@@ -30,6 +34,8 @@ export class WaitingRoomScreen {
     this.maxRounds = maxRounds;
     this.onRoundsChange = onRoundsChange;
     this.onStartGame = onStartGame;
+    this.onLeaveRoom = onLeaveRoom;
+    this.onCloseRoom = onCloseRoom;
 
     this.roundsText = new Text({
       text: '',
@@ -87,6 +93,13 @@ export class WaitingRoomScreen {
       waitingText.x = window.innerWidth / 2;
       waitingText.y = 400;
       this.container.addChild(waitingText);
+
+      // Leave room button for non-admin
+      const leaveBtn = this.createButton('Leave Room', window.innerWidth / 2 - 150, 480);
+      leaveBtn.eventMode = 'static';
+      leaveBtn.cursor = 'pointer';
+      leaveBtn.on('pointerdown', () => this.onLeaveRoom());
+      this.container.addChild(leaveBtn);
     }
   }
 
@@ -138,6 +151,13 @@ export class WaitingRoomScreen {
     startBtn.cursor = 'pointer';
     startBtn.on('pointerdown', () => this.onStartGame());
     this.container.addChild(startBtn);
+
+    // Close room button for admin
+    const closeBtn = this.createButton('Close Room', window.innerWidth / 2 - 150, 580);
+    closeBtn.eventMode = 'static';
+    closeBtn.cursor = 'pointer';
+    closeBtn.on('pointerdown', () => this.onCloseRoom());
+    this.container.addChild(closeBtn);
   }
 
   private createButton(text: string, x: number, y: number): Container {

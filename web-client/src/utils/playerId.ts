@@ -22,3 +22,15 @@ export function getPlayerId(): string {
   
   return playerId;
 }
+
+export function setCurrentRoomId(roomId: string): void {
+  localStorage.setItem('currentRoomId', roomId);
+}
+
+export function getCurrentRoomId(): string | null {
+  return localStorage.getItem('currentRoomId');
+}
+
+export function clearCurrentRoomId(): void {
+  localStorage.removeItem('currentRoomId');
+}
