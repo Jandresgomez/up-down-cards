@@ -1,6 +1,6 @@
 # Up-Down Cards
 
-A multiplayer card game built with a client-server architecture using Firebase Cloud Functions and Firestore for backend services, and PixiJS for the web client.
+A multiplayer card game built with a client-server architecture using Express.js backend with Firebase Firestore for data storage, and PixiJS for the web client.
 
 ## Documentation
 
@@ -24,9 +24,25 @@ Up-Down Cards is a web-based multiplayer card game where players can create or j
 ### Client-Server Model
 
 - **Client**: Web application built with PixiJS and TypeScript
-- **Server**: Firebase Cloud Functions (Node.js 22)
-- **Database**: Cloud Firestore
-- **Hosting**: Firebase Hosting
+- **Server**: Express.js server (Node.js 22) that stores data in Firebase Firestore
+- **Database**: Cloud Firestore (real-time NoSQL database)
+- **Hosting**: Self-hosted server + Firebase Hosting for client
+
+### Why Express.js?
+
+The backend uses Express.js instead of Firebase Cloud Functions to:
+- Stay on Firebase's free Spark plan (no credit card required)
+- Avoid Cloud Functions invocation costs
+- Provide full control over hosting and deployment
+- Eliminate cold start latency
+
+### Deployment Options
+
+1. **Self-Hosted Express Server** (recommended, free Firebase Spark plan)
+   - Run on your own machine, VPS, or cloud provider
+
+2. **Firebase Cloud Functions** (legacy, requires Blaze plan)
+   - Serverless, auto-scaling
 
 ## Project Structure
 
@@ -36,15 +52,22 @@ up-down-cards/
 │   ├── src/
 │   │   ├── scenes/      # Game screens (Welcome, Waiting Room, Game)
 │   │   ├── state/       # Game state management
-│   │   ├── api/         # Firebase Cloud Functions API client
+│   │   ├── api/         # Express server API client
 │   │   ├── firebase.ts  # Firebase configuration
 │   │   └── main.ts      # Application entry point
+│   ├── .env.development # Development environment config
+│   ├── .env.production  # Production environment config
 │   ├── index.html
 │   └── package.json
-├── server/              # Backend Cloud Functions
+├── server/              # Express.js Backend
 │   ├── src/
-│   │   ├── index.ts     # Cloud Functions definitions
+│   │   ├── app.ts       # Express application
+│   │   ├── server.ts    # Server entry point
+│   │   ├── game-functions.ts  # Game logic
+│   │   ├── state-machine.ts   # State machine
 │   │   └── types.ts     # TypeScript interfaces
+│   ├── Dockerfile       # Docker container config
+│   ├── docker-compose.yml
 │   └── package.json
 ├── firebase.json        # Firebase project configuration
 ├── firestore.rules      # Firestore security rules
@@ -56,15 +79,16 @@ up-down-cards/
 ### Frontend (web-client/)
 - **PixiJS 8.16**: 2D rendering engine for game graphics
 - **@pixi/ui 2.3**: UI components for PixiJS
-- **Firebase SDK 12.9**: Client SDK for Firebase services
+- **Firebase SDK 12.9**: Client SDK for Firestore real-time sync
 - **Vite 7.3**: Build tool and dev server
 - **TypeScript 5.9**: Type-safe JavaScript
 
 ### Backend (server/)
-- **Firebase Functions 7.0**: Serverless cloud functions
-- **Firebase Admin SDK 13.6**: Server-side Firebase operations
+- **Express.js 4.21**: Web server framework
+- **Firebase Admin SDK 13.6**: Server-side Firestore operations
 - **TypeScript 5.9**: Type-safe JavaScript
-- **Node.js 18**: Runtime environment
+- **Node.js 22**: Runtime environment
+- **Docker**: Containerization support
 
 ## Key Components
 
@@ -99,24 +123,48 @@ up-down-cards/
 **API Client** (`web-client/src/api/api.ts`)
 - `createNewRoom()`: Creates a new game room
 - `joinRoom(roomId)`: Joins an existing room by ID
+- `updateRoomSettings()`: Updates room configuration
+- `startGame()`: Starts the game
+- `placeBet()`: Places a bet during betting phase
+- `playCard()`: Plays a card during hand
+- `continueGame()`: Continues to next round/hand
+- `leaveRoom()`: Leaves a room
+- `closeRoom()`: Closes a room (admin only)
 
-### Cloud Functions
+### Express Server
 
-**Server Functions** (`server/src/index.ts`)
+**Server Endpoints** (`server/src/app.ts`)
 
-1. **createRoom**
+All endpoints accept POST requests with JSON body:
+
+1. **POST /createRoom**
    - Generates unique 6-character room ID
-   - Initializes room with default settings
+   - Initializes game state with default settings
    - Returns room ID to client
 
-2. **joinRoom**
+2. **POST /joinRoom**
    - Validates room ID
    - Checks room status and capacity
-   - Returns success/error response
+   - Adds player to game state
+
+3. **POST /updateRoomSettings**
+   - Updates room configuration (admin only)
+   - Validates settings against game rules
+
+4. **POST /startGame**
+   - Transitions game to playing state
+   - Deals cards and sets up first round
+
+5. **POST /placeBet, /playCard, /continueGame**
+   - Handle game actions through state machine
+   - Update Firestore with new game state
+
+6. **POST /leaveRoom, /closeRoom**
+   - Handle room cleanup and player removal
 
 ### Data Models
 
-**Room** (`server/src/types.ts`)
+**GameState** (`server/src/game-types.ts`)
 ```typescript
 {
   id: string
@@ -141,8 +189,10 @@ up-down-cards/
 ## Development Setup
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 22+
 - Firebase CLI
+- npm or yarn
+- Firebase service account key (for server)
 - npm or yarn
 
 ### Installation
@@ -158,12 +208,22 @@ cd ../server
 npm install
 ```
 
+2. Get Firebase service account key:
+   - Visit [Firebase Console](https://console.firebase.google.com/project/up-down-cards/settings/serviceaccounts/adminsdk)
+   - Click "Generate new private key"
+   - Save as `server/serviceAccountKey.json`
+
 ### Running Locally
 
-**Start Firebase Emulators (Server)**
+**Start Firestore Emulator + Express Server**
 ```bash
+# Terminal 1 - Start Firestore emulator
 cd server
-npm run serve
+npm run emulator
+
+# Terminal 2 - Start Express server
+cd server
+npm run dev
 ```
 
 **Start Client Dev Server**
@@ -171,6 +231,8 @@ npm run serve
 cd web-client
 npm run dev
 ```
+
+The client will connect to `http://localhost:3000` (Express server), which connects to the Firestore emulator.
 
 ### Building
 
@@ -188,7 +250,25 @@ npm run build
 
 ## Deployment
 
-### Deploy Cloud Functions
+### Deploy Express Server
+
+See [Express Migration Guide](./docs/info/express-migration.md) for deployment options:
+- Local machine with PM2
+- Docker
+- Cloud hosting (Railway, Render, DigitalOcean, etc.)
+
+### Deploy Client
+
+Update `web-client/.env.production` with your server URL, then:
+
+```bash
+cd web-client
+npm run release
+```
+
+This builds the client and deploys to Firebase Hosting.
+
+### Legacy: Deploy Cloud Functions
 ```bash
 cd server
 npm run deploy
@@ -210,10 +290,6 @@ firebase deploy
 - **Firestore Location**: nam5 (North America)
 - **Functions Region**: Default (us-central1)
 - **Hosting**: Serves from `web-client/dist`
-
-## Security
-
-⚠️ **Current Firestore Rules**: Open access until March 20, 2026. Update security rules before production deployment.
 
 ## Game Flow
 
