@@ -20,14 +20,28 @@ let isAdmin: boolean = false;
 const playerId = getPlayerId();
 console.log('Player ID:', playerId);
 
-await app.init({
-  resizeTo: window,
-  backgroundColor: 0x1a1a2e,
-  resolution: window.devicePixelRatio || 1,
-  autoDensity: true,
-});
+async function initApp() {
+  await app.init({
+    resizeTo: window,
+    backgroundColor: 0x1a1a2e,
+    resolution: window.devicePixelRatio || 1,
+    autoDensity: true,
+  });
 
-document.body.appendChild(app.canvas);
+  document.body.appendChild(app.canvas);
+
+  // Check for existing room on load
+  const savedRoomId = getCurrentRoomId();
+  if (savedRoomId) {
+    console.log('Found saved room:', savedRoomId);
+    showReconnectScreen(savedRoomId);
+  } else {
+    // Start with welcome screen
+    showWelcomeScreen();
+  }
+}
+
+initApp().catch(console.error);
 
 function handleGameStateUpdate(gameState: GameState): void {
   console.log('Game state updated:', gameState.status);
@@ -230,14 +244,4 @@ function showReconnectScreen(roomId: string): void {
 
   app.stage.addChild(reconnectScreen.getContainer());
   currentScreen = reconnectScreen;
-}
-
-// Check for existing room on load
-const savedRoomId = getCurrentRoomId();
-if (savedRoomId) {
-  console.log('Found saved room:', savedRoomId);
-  showReconnectScreen(savedRoomId);
-} else {
-  // Start with welcome screen
-  showWelcomeScreen();
 }
