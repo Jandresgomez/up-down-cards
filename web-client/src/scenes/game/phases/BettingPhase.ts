@@ -20,7 +20,7 @@ export class BettingPhase {
     if (!isMyTurn(gameState, myPlayerId)) return;
 
     const validBets = getValidBets(gameState, myPlayerId);
-    
+
     this.bettingUI = new BettingUI(validBets, async (bet) => {
       try {
         const result = await placeBet(bet);
@@ -34,7 +34,7 @@ export class BettingPhase {
 
     // Center the betting UI
     this.bettingUI.x = (window.innerWidth - 400) / 2;
-    this.bettingUI.y = window.innerHeight / 2 - 150;
+    this.bettingUI.y = window.innerHeight / 2 - 180;
 
     this.container.addChild(this.bettingUI);
   }

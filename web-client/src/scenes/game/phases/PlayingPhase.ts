@@ -61,16 +61,21 @@ export class PlayingPhase {
     if (cardsPlayed.length === 0) return;
 
     const boardArea = LAYOUT.getBoardArea();
-    const centerX = window.innerWidth / 2;
-    const centerY = boardArea.y + (boardArea.height / 2); // Center of board area
-    const radius = vmin(15); // 15% of smallest dimension
+
+    const CARD_WIDTH = 80;
+    const CARD_HEIGHT = 120;
+    const MARGIN = 10;
+
+    const LINE_SIZE = Math.floor((window.innerWidth - vw(14)) / (CARD_WIDTH + MARGIN))
+    // draw cards in order of play, left to right, with new line if exceeds width
+    const baseX = vw(7);
+    const baseY = (vh(4) + 100);
 
     cardsPlayed.forEach((playedCard, index) => {
-      const angle = (index / cardsPlayed.length) * Math.PI * 2 - Math.PI / 2;
-      const x = centerX + Math.cos(angle) * radius - 40;
-      const y = centerY + Math.sin(angle) * radius - 60;
+      const x = baseX + (CARD_WIDTH + MARGIN) * (index % LINE_SIZE);
+      const y = baseY + (CARD_HEIGHT + MARGIN) * Math.floor(index / LINE_SIZE);
 
-      const cardComponent = new Card(playedCard.card);
+      const cardComponent = new Card(playedCard.card, CARD_WIDTH, CARD_HEIGHT);
       cardComponent.x = x;
       cardComponent.y = y;
 

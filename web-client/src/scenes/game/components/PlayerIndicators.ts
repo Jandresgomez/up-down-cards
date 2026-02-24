@@ -31,7 +31,7 @@ export class PlayerIndicators extends Container {
     const boardArea = LAYOUT.getBoardArea();
     const startX = window.innerWidth - vw(9.5);
     const startY = boardArea.y + vh(5.5);
-    const spacing = 35; // Vertical spacing between indicators
+    const spacing = 38; // Vertical spacing between indicators
 
     players.forEach((player, index) => {
       const indicator = this.createIndicator(

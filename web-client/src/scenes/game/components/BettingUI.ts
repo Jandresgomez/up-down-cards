@@ -18,7 +18,7 @@ export class BettingUI extends Container {
 
     // Background panel
     const bg = new Graphics();
-    bg.roundRect(0, 0, 400, 200, 15);
+    bg.roundRect(0, 0, 400, 260, 15);
     bg.fill(0x1a1a2e);
     bg.stroke({ width: 3, color: 0x4caf50 });
     this.addChild(bg);
@@ -26,11 +26,11 @@ export class BettingUI extends Container {
     // Title
     const title = new Text({
       text: 'Place Your Bet',
-      style: { fontSize: 28, fill: 0xffffff, fontWeight: 'bold' }
+      style: { fontSize: 22, fill: 0xffffff, fontWeight: 'bold' }
     });
     title.anchor.set(0.5);
     title.x = 200;
-    title.y = 30;
+    title.y = 40;
     this.addChild(title);
 
     // Bet display
@@ -40,27 +40,27 @@ export class BettingUI extends Container {
     });
     this.betText.anchor.set(0.5);
     this.betText.x = 200;
-    this.betText.y = 90;
+    this.betText.y = 100;
     this.addChild(this.betText);
 
     // Decrease button
-    const decreaseBtn = new Button('-', 60, 60);
-    decreaseBtn.x = 80;
-    decreaseBtn.y = 120;
+    const decreaseBtn = new Button('-', 40, 40);
+    decreaseBtn.x = 90;
+    decreaseBtn.y = 150;
     decreaseBtn.on('pointerdown', () => this.changeBet(-1));
     this.addChild(decreaseBtn);
 
     // Increase button
-    const increaseBtn = new Button('+', 60, 60);
-    increaseBtn.x = 260;
-    increaseBtn.y = 120;
+    const increaseBtn = new Button('+', 40, 40);
+    increaseBtn.x = 270;
+    increaseBtn.y = 150;
     increaseBtn.on('pointerdown', () => this.changeBet(1));
     this.addChild(increaseBtn);
 
     // Confirm button
-    const confirmBtn = new Button('Confirm', 150, 50, 0x4caf50);
-    confirmBtn.x = 125;
-    confirmBtn.y = 200;
+    const confirmBtn = new Button('Confirm', 120, 40, 0x4caf50);
+    confirmBtn.x = 140;
+    confirmBtn.y = 150;
     confirmBtn.on('pointerdown', () => this.confirm());
     this.addChild(confirmBtn);
 
@@ -73,6 +73,7 @@ export class BettingUI extends Container {
     this.warningText.x = 200;
     this.warningText.y = 270;
     this.addChild(this.warningText);
+    this.updateWarning();
   }
 
   private changeBet(delta: number): void {

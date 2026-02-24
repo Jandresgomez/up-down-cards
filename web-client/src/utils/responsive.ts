@@ -20,7 +20,7 @@ export const LAYOUT = {
   HEADER_HEIGHT: 15,      // 15% of viewport height
   HAND_HEIGHT: 25,        // 25% of viewport height
   BOARD_HEIGHT: 60,       // 60% of viewport height (remaining space)
-  
+
   // Helper functions
   getHeaderArea() {
     return {
@@ -28,14 +28,14 @@ export const LAYOUT = {
       height: vh(this.HEADER_HEIGHT)
     };
   },
-  
+
   getBoardArea() {
     return {
       y: vh(this.HEADER_HEIGHT),
       height: vh(this.BOARD_HEIGHT)
     };
   },
-  
+
   getHandArea() {
     return {
       y: vh(this.HEADER_HEIGHT + this.BOARD_HEIGHT),
