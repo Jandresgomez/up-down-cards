@@ -3,11 +3,32 @@ version: '3.8'
 services:
   up-down-backend:
     build: .
-    ports:
-      - "9952:3000"
+    container_name: up-down-backend
+    expose:
+      - "3000"
     environment:
       - PORT=3000
       - GOOGLE_APPLICATION_CREDENTIALS=/app/serviceAccountKey.json
     volumes:
       - ./serviceAccountKey.json:/app/serviceAccountKey.json:ro
     restart: unless-stopped
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+    depends_on:
+      - up-down-backend
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
