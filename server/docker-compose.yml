@@ -1,10 +1,10 @@
 version: '3.8'
 
 services:
-  server:
+  up-down-backend:
     build: .
     ports:
-      - "3000:3000"
+      - "9952:3000"
     environment:
       - PORT=3000
       - GOOGLE_APPLICATION_CREDENTIALS=/app/serviceAccountKey.json
