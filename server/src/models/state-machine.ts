@@ -325,14 +325,14 @@ export class GameStateMachine {
     if (allReady) {
       // All players ready, check if round is complete
       const roundComplete = state.currentRound.handsPlayed >= state.currentRound.cardsPerPlayer;
-      
+
       if (roundComplete) {
         // Calculate and update scores before showing round_complete
         const updatedPlayers = state.players.map(p => {
           const points = p.bet === p.handsWon ? 10 + 2 * p.handsWon : 0;
           return { ...p, totalScore: p.totalScore + points };
         });
-        
+
         // Transition to round_complete with updated scores
         return {
           ...state,
@@ -345,7 +345,7 @@ export class GameStateMachine {
           status: 'round_complete'
         };
       }
-      
+
       // More hands to play, transition to next hand
       return {
         ...state,
