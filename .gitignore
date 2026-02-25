@@ -17,3 +17,5 @@ server/lib/
 
 # Sever and SSL config
 certbot/
+.vercel
+.env*.local

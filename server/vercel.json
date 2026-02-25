@@ -1,18 +1,16 @@
 {
   "version": 2,
+  "buildCommand": "npm run build",
   "builds": [
     {
-      "src": "src/entry-points/vercel.ts",
+      "src": "lib/entry-points/vercel.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "src/entry-points/vercel.ts"
+      "dest": "lib/entry-points/vercel.js"
     }
-  ],
-  "env": {
-    "GOOGLE_APPLICATION_CREDENTIALS": "@google_application_credentials"
-  }
+  ]
 }
