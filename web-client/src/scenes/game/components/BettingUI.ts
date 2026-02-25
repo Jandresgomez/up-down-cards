@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { Button } from './Button';
+import { getResponsiveSizes } from '../../../utils/responsive';
 
 export class BettingUI extends Container {
   private currentBet: number = 0;
@@ -8,6 +9,11 @@ export class BettingUI extends Container {
   private betText: Text;
   private warningText: Text;
   private onConfirm: (bet: number) => void;
+  private bg: Graphics;
+  private title: Text;
+  private decreaseBtn: Button;
+  private increaseBtn: Button;
+  private confirmBtn: Button;
 
   constructor(validBets: number[], onConfirm: (bet: number) => void) {
     super();
@@ -16,64 +22,87 @@ export class BettingUI extends Container {
     this.currentBet = 0;
     this.onConfirm = onConfirm;
 
+    const sizes = getResponsiveSizes();
+    const panelWidth = Math.min(400, sizes.width * 0.9);
+    const panelHeight = sizes.isMobile ? 240 : 260;
+
     // Background panel
-    const bg = new Graphics();
-    bg.roundRect(0, 0, 400, 260, 15);
-    bg.fill(0x1a1a2e);
-    bg.stroke({ width: 3, color: 0x4caf50 });
-    this.addChild(bg);
+    this.bg = new Graphics();
+    this.bg.roundRect(0, 0, panelWidth, panelHeight, 15);
+    this.bg.fill(0x1a1a2e);
+    this.bg.stroke({ width: 3, color: 0x4caf50 });
+    this.addChild(this.bg);
 
     // Title
-    const title = new Text({
+    this.title = new Text({
       text: 'Place Your Bet',
-      style: { fontSize: 22, fill: 0xffffff, fontWeight: 'bold' }
+      style: { fontSize: sizes.fontSize, fill: 0xffffff, fontWeight: 'bold' }
     });
-    title.anchor.set(0.5);
-    title.x = 200;
-    title.y = 40;
-    this.addChild(title);
+    this.title.anchor.set(0.5);
+    this.title.x = panelWidth / 2;
+    this.title.y = sizes.spacing;
+    this.addChild(this.title);
 
     // Bet display
     this.betText = new Text({
       text: '0',
-      style: { fontSize: 48, fill: 0x4caf50, fontWeight: 'bold' }
+      style: { fontSize: sizes.isMobile ? 40 : 48, fill: 0x4caf50, fontWeight: 'bold' }
     });
     this.betText.anchor.set(0.5);
-    this.betText.x = 200;
-    this.betText.y = 100;
+    this.betText.x = panelWidth / 2;
+    this.betText.y = sizes.isMobile ? 80 : 100;
     this.addChild(this.betText);
 
-    // Decrease button
-    const decreaseBtn = new Button('-', 40, 40);
-    decreaseBtn.x = 90;
-    decreaseBtn.y = 150;
-    decreaseBtn.on('pointerdown', () => this.changeBet(-1));
-    this.addChild(decreaseBtn);
+    // Button row
+    const btnY = sizes.isMobile ? 140 : 150;
+    const btnSize = sizes.buttonSmall.width;
+    const confirmWidth = sizes.isMobile ? 100 : 120;
+    const spacing = 10;
+    
+    // Calculate positions to center the button group
+    const totalWidth = btnSize + spacing + confirmWidth + spacing + btnSize;
+    const startX = (panelWidth - totalWidth) / 2;
 
-    // Increase button
-    const increaseBtn = new Button('+', 40, 40);
-    increaseBtn.x = 270;
-    increaseBtn.y = 150;
-    increaseBtn.on('pointerdown', () => this.changeBet(1));
-    this.addChild(increaseBtn);
+    // Decrease button
+    this.decreaseBtn = new Button('-', btnSize, btnSize);
+    this.decreaseBtn.x = startX;
+    this.decreaseBtn.y = btnY;
+    this.decreaseBtn.on('pointerdown', () => this.changeBet(-1));
+    this.addChild(this.decreaseBtn);
 
     // Confirm button
-    const confirmBtn = new Button('Confirm', 120, 40, 0x4caf50);
-    confirmBtn.x = 140;
-    confirmBtn.y = 150;
-    confirmBtn.on('pointerdown', () => this.confirm());
-    this.addChild(confirmBtn);
+    this.confirmBtn = new Button('Confirm', confirmWidth, sizes.buttonSmall.height, 0x4caf50);
+    this.confirmBtn.x = startX + btnSize + spacing;
+    this.confirmBtn.y = btnY;
+    this.confirmBtn.on('pointerdown', () => this.confirm());
+    this.addChild(this.confirmBtn);
+
+    // Increase button
+    this.increaseBtn = new Button('+', btnSize, btnSize);
+    this.increaseBtn.x = startX + btnSize + spacing + confirmWidth + spacing;
+    this.increaseBtn.y = btnY;
+    this.increaseBtn.on('pointerdown', () => this.changeBet(1));
+    this.addChild(this.increaseBtn);
 
     // Warning text
     this.warningText = new Text({
       text: '',
-      style: { fontSize: 16, fill: 0xff6b6b }
+      style: { fontSize: sizes.smallFontSize, fill: 0xff6b6b }
     });
     this.warningText.anchor.set(0.5);
-    this.warningText.x = 200;
-    this.warningText.y = 270;
+    this.warningText.x = panelWidth / 2;
+    this.warningText.y = btnY + sizes.buttonSmall.height + 20;
     this.addChild(this.warningText);
+    
     this.updateWarning();
+    this.positionCenter();
+    
+    window.addEventListener('resize', () => this.positionCenter());
+  }
+
+  private positionCenter(): void {
+    this.x = (window.innerWidth - this.bg.width) / 2;
+    this.y = (window.innerHeight - this.bg.height) / 2;
   }
 
   private changeBet(delta: number): void {

@@ -1,7 +1,7 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { GameState, SUIT_SYMBOLS, SUIT_COLORS } from '../types/game-types';
 import { getPlayerId } from '../utils/playerId';
-import { LAYOUT, vh, vw } from '../utils/responsive';
+import { LAYOUT, vh, vw, isMobile, getCardDimensions } from '../utils/responsive';
 import { InfoPanel } from './game/components/InfoPanel';
 import { PlayerIndicators } from './game/components/PlayerIndicators';
 import { BettingPhase } from './game/phases/BettingPhase';
@@ -206,10 +206,15 @@ export class GameScreen {
     if (!this.gameState?.currentRound?.mesa) return;
 
     const mesa = this.gameState.currentRound.mesa;
+    const mobile = isMobile();
+    const cardWidth = mobile ? 50 : 60;
+    const cardHeight = mobile ? 44 : 54;
+    const fontSize = mobile ? 12 : 14;
+    const rankSize = mobile ? 20 : 24;
 
     // Card background
     const bg = new Graphics();
-    bg.roundRect(0, 0, 60, 54, 8);
+    bg.roundRect(0, 0, cardWidth, cardHeight, 8);
     bg.fill(0xffffff);
     bg.stroke({ width: 2, color: 0x333333 });
     this.mesaCard.addChild(bg);
@@ -217,25 +222,25 @@ export class GameScreen {
     // Mesa label
     const label = new Text({
       text: 'Mesa',
-      style: { fontSize: 14, fill: 0x666666, fontWeight: 'bold' }
+      style: { fontSize, fill: 0x666666, fontWeight: 'bold' }
     });
-    label.x = 8;
-    label.y = 8;
+    label.x = 6;
+    label.y = 6;
     this.mesaCard.addChild(label);
 
     // Rank and Suit on same line
     const cardText = new Text({
       text: `${mesa.rank}${SUIT_SYMBOLS[mesa.suit]}`,
-      style: { fontSize: 24, fill: SUIT_COLORS[mesa.suit], fontWeight: 'bold' }
+      style: { fontSize: rankSize, fill: SUIT_COLORS[mesa.suit], fontWeight: 'bold' }
     });
-    cardText.x = 8;
-    cardText.y = 24;
+    cardText.x = 6;
+    cardText.y = mobile ? 20 : 24;
     this.mesaCard.addChild(cardText);
 
     // Position in top-left corner of the game board
     const boardArea = LAYOUT.getBoardArea();
-    this.mesaCard.x = vw(7);  // Slightly inside the board
-    this.mesaCard.y = boardArea.y + vh(4); // Slightly below board top
+    this.mesaCard.x = vw(7);
+    this.mesaCard.y = boardArea.y + vh(4);
   }
 
   getContainer(): Container {

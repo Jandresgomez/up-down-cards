@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { Input } from '@pixi/ui';
+import { getResponsiveSizes } from '../utils/responsive';
 
 export class WelcomeScreen {
   private container: Container;
@@ -7,29 +8,42 @@ export class WelcomeScreen {
   private onCreateRoom: () => void;
   private roomInput: Input;
   private errorText: Text;
+  private title: Text;
+  private createBtn: Container;
+  private joinText: Text;
+  private joinBtn: Container;
 
   constructor(onJoinRoom: (roomNumber: string) => void, onCreateRoom: () => void) {
     this.container = new Container();
     this.onJoinRoom = onJoinRoom;
     this.onCreateRoom = onCreateRoom;
-    
+
     // Initialize error text
     this.errorText = new Text({
       text: '',
       style: { fontSize: 18, fill: 0xff4444 }
     });
-    
+
     // Create text input
     this.roomInput = this.createTextInput();
-    
+
     this.createUI();
+    this.resize();
+
+    // Listen for window resize
+    window.addEventListener('resize', () => this.resize());
   }
 
   private createTextInput(): Input {
+    const sizes = getResponsiveSizes();
+
     const input = new Input({
-      bg: new Graphics().roundRect(0, 0, 300, 50, 10).fill(0xffffff).stroke({ width: 2, color: 0x2a9d8f }),
+      bg: new Graphics()
+        .roundRect(0, 0, sizes.inputWidth, sizes.inputHeight, 10)
+        .fill(0xffffff)
+        .stroke({ width: 2, color: 0x2a9d8f }),
       textStyle: {
-        fontSize: 24,
+        fontSize: sizes.fontSize,
         fill: 0x000000
       },
       placeholder: 'Enter room ID...',
@@ -40,62 +54,114 @@ export class WelcomeScreen {
         left: 12
       }
     });
-    
+
     return input;
   }
 
   private createUI(): void {
+    const sizes = getResponsiveSizes();
+
     // Title
-    const title = new Text({
+    this.title = new Text({
       text: 'Up Down Cards',
-      style: { fontSize: 48, fill: 0xffffff, fontWeight: 'bold' }
+      style: { fontSize: sizes.titleSize, fill: 0xffffff, fontWeight: 'bold' }
     });
-    title.anchor.set(0.5);
-    title.x = window.innerWidth / 2;
-    title.y = 150;
-    this.container.addChild(title);
+    this.title.anchor.set(0.5);
+    this.container.addChild(this.title);
 
     // Create Room Button
-    const createBtn = this.createButton('Create New Room', window.innerWidth / 2 - 150, 300);
-    createBtn.eventMode = 'static';
-    createBtn.cursor = 'pointer';
-    createBtn.on('pointerdown', () => this.onCreateRoom());
-    this.container.addChild(createBtn);
+    this.createBtn = this.createButton('Create New Room', sizes.buttonLarge.width, sizes.buttonLarge.height);
+    this.createBtn.eventMode = 'static';
+    this.createBtn.cursor = 'pointer';
+    this.createBtn.on('pointerdown', () => this.onCreateRoom());
+    this.container.addChild(this.createBtn);
 
     // Join Room Text
-    const joinText = new Text({
+    this.joinText = new Text({
       text: 'Or enter room number:',
-      style: { fontSize: 24, fill: 0xffffff }
+      style: { fontSize: sizes.fontSize, fill: 0xffffff }
     });
-    joinText.anchor.set(0.5);
-    joinText.x = window.innerWidth / 2;
-    joinText.y = 450;
-    this.container.addChild(joinText);
+    this.joinText.anchor.set(0.5);
+    this.container.addChild(this.joinText);
 
     // Room Input
-    this.roomInput.x = window.innerWidth / 2 - 150;
-    this.roomInput.y = 500;
     this.container.addChild(this.roomInput);
 
     // Error text
     this.errorText.anchor.set(0.5);
-    this.errorText.x = window.innerWidth / 2;
-    this.errorText.y = 570;
     this.container.addChild(this.errorText);
 
     // Join Button
-    const joinBtn = this.createButton('Join Room', window.innerWidth / 2 - 150, 600);
-    joinBtn.eventMode = 'static';
-    joinBtn.cursor = 'pointer';
-    joinBtn.on('pointerdown', () => this.handleJoinRoom());
-    this.container.addChild(joinBtn);
+    this.joinBtn = this.createButton('Join Room', sizes.buttonLarge.width, sizes.buttonLarge.height);
+    this.joinBtn.eventMode = 'static';
+    this.joinBtn.cursor = 'pointer';
+    this.joinBtn.on('pointerdown', () => this.handleJoinRoom());
+    this.container.addChild(this.joinBtn);
   }
 
-  private createButton(text: string, x: number, y: number): Container {
+  private resize(): void {
+    const sizes = getResponsiveSizes();
+    const centerX = sizes.width / 2;
+    let currentY = sizes.height * 0.2;
+
+    // Update title
+    this.title.style.fontSize = sizes.titleSize;
+    this.title.x = centerX;
+    this.title.y = currentY;
+    currentY += this.title.height + sizes.spacing;
+
+    // Update create button
+    this.createBtn.x = centerX - sizes.buttonLarge.width / 2;
+    this.createBtn.y = currentY;
+    this.updateButtonSize(this.createBtn, sizes.buttonLarge.width, sizes.buttonLarge.height, sizes.fontSize);
+    currentY += sizes.buttonLarge.height + sizes.spacing;
+
+    // Update join text
+    this.joinText.style.fontSize = sizes.fontSize;
+    this.joinText.x = centerX;
+    this.joinText.y = currentY;
+    currentY += this.joinText.height + sizes.spacing * 0.5;
+
+    // Recreate input with new size
+    const oldValue = this.roomInput.value;
+    this.container.removeChild(this.roomInput);
+    this.roomInput = this.createTextInput();
+    this.roomInput.value = oldValue;
+    this.container.addChildAt(this.roomInput, this.container.getChildIndex(this.errorText));
+    this.roomInput.x = centerX - sizes.inputWidth / 2;
+    this.roomInput.y = currentY;
+    currentY += sizes.inputHeight + sizes.spacing * 0.8;
+
+    // Update error text
+    this.errorText.x = centerX;
+    this.errorText.y = currentY;
+    currentY += Math.max(this.errorText.height, 20) + sizes.spacing * 0.5;
+
+    // Update join button
+    this.joinBtn.x = centerX - sizes.buttonLarge.width / 2;
+    this.joinBtn.y = currentY;
+    this.updateButtonSize(this.joinBtn, sizes.buttonLarge.width, sizes.buttonLarge.height, sizes.fontSize);
+  }
+
+  private updateButtonSize(btn: Container, width: number, height: number, fontSize: number): void {
+    const bg = btn.getChildAt(0) as Graphics;
+    const text = btn.getChildAt(1) as Text;
+
+    bg.clear();
+    bg.roundRect(0, 0, width, height, 10);
+    bg.fill(0x2a9d8f);
+    bg.stroke({ width: 2, color: 0xffffff });
+
+    text.style.fontSize = fontSize;
+    text.x = width / 2;
+    text.y = height / 2;
+  }
+
+  private createButton(text: string, width: number, height: number): Container {
     const btn = new Container();
-    
+
     const bg = new Graphics();
-    bg.roundRect(0, 0, 300, 60, 10);
+    bg.roundRect(0, 0, width, height, 10);
     bg.fill(0x2a9d8f);
     bg.stroke({ width: 2, color: 0xffffff });
     btn.addChild(bg);
@@ -105,12 +171,9 @@ export class WelcomeScreen {
       style: { fontSize: 24, fill: 0xffffff, fontWeight: 'bold' }
     });
     label.anchor.set(0.5);
-    label.x = 150;
-    label.y = 30;
+    label.x = width / 2;
+    label.y = height / 2;
     btn.addChild(label);
-
-    btn.x = x;
-    btn.y = y;
 
     return btn;
   }

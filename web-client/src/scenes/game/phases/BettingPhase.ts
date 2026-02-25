@@ -32,10 +32,7 @@ export class BettingPhase {
       }
     });
 
-    // Center the betting UI
-    this.bettingUI.x = (window.innerWidth - 400) / 2;
-    this.bettingUI.y = window.innerHeight / 2 - 180;
-
+    // BettingUI now centers itself
     this.container.addChild(this.bettingUI);
   }
 

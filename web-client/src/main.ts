@@ -213,6 +213,10 @@ function showGameScreen(gameState: GameState): void {
 window.addEventListener('resize', () => {
   if (currentScreen instanceof GameScreen) {
     currentScreen.resizeGame();
+  } else if (currentScreen instanceof WelcomeScreen) {
+    // WelcomeScreen handles its own resize internally
+  } else if (currentScreen instanceof WaitingRoomScreen) {
+    // WaitingRoomScreen will handle its own resize
   }
 });
 
