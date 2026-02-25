@@ -1,12 +1,12 @@
 import { Container } from 'pixi.js';
 import { GameState } from '../../../types/game-types';
-import { BettingUI } from '../components/BettingUI';
-import { getValidBets, isMyTurn } from '../../../utils/gameHelpers';
+import { BettingScene } from '../scenes/BettingScene';
+import { getValidBets, isMyTurn as checkIsMyTurn } from '../../../utils/gameHelpers';
 import { placeBet } from '../../../api/api';
 
 export class BettingPhase {
   private container: Container;
-  private bettingUI: BettingUI | null = null;
+  private bettingScene: BettingScene | null = null;
 
   constructor(container: Container) {
     this.container = container;
@@ -16,12 +16,12 @@ export class BettingPhase {
     // Clear existing UI
     this.clear();
 
-    // Only show betting UI if it's my turn
-    if (!isMyTurn(gameState, myPlayerId)) return;
-
+    // Show betting scene for all players during betting phase
     const validBets = getValidBets(gameState, myPlayerId);
+    const maxBet = gameState.currentRound?.cardsPerPlayer || 0;
+    const isMyTurn = checkIsMyTurn(gameState, myPlayerId);
 
-    this.bettingUI = new BettingUI(validBets, async (bet) => {
+    this.bettingScene = new BettingScene(gameState, myPlayerId, validBets, maxBet, isMyTurn, async (bet) => {
       try {
         const result = await placeBet(bet);
         if (!result.success) {
@@ -32,15 +32,14 @@ export class BettingPhase {
       }
     });
 
-    // BettingUI now centers itself
-    this.container.addChild(this.bettingUI);
+    this.container.addChild(this.bettingScene);
   }
 
   clear(): void {
-    if (this.bettingUI) {
-      this.container.removeChild(this.bettingUI);
-      this.bettingUI.destroy({ children: true });
-      this.bettingUI = null;
+    if (this.bettingScene) {
+      this.container.removeChild(this.bettingScene);
+      this.bettingScene.destroy({ children: true });
+      this.bettingScene = null;
     }
   }
 }

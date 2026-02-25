@@ -17,6 +17,7 @@ export type GameStatus =
 
 export interface PlayerState {
   id: string;
+  shorthand: string;
   hand: Card[];
   bet: number | null;
   handsWon: number;

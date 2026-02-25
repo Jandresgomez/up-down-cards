@@ -1,9 +1,10 @@
-import { Container } from 'pixi.js';
+import { Container, Text } from 'pixi.js';
 import { GameState, Card as CardType } from '../../../types/game-types';
 import { Card } from '../components/Card';
 import { getMyHand, canPlayCard, isMyTurn } from '../../../utils/gameHelpers';
-import { playCard } from '../../../api/api';
-import { LAYOUT, vw, vh, getCardDimensions } from '../../../utils/responsive';
+import { playCard, continueGame } from '../../../api/api';
+import { LAYOUT, vw, vh, getCardDimensions, isMobile } from '../../../utils/responsive';
+import { Button } from '../components/Button';
 
 export class PlayingPhase {
   private handContainer: Container;
@@ -55,7 +56,66 @@ export class PlayingPhase {
     });
   }
 
-  renderTableCards(gameState: GameState): void {
+  renderHandComplete(gameState: GameState, myPlayerId: string): void {
+    this.clearHand();
+
+    if (!gameState.currentRound) return;
+
+    const lastHand = gameState.currentRound.completedHands[
+      gameState.currentRound.completedHands.length - 1
+    ];
+    if (!lastHand) return;
+
+    const winnerIndex = gameState.players.findIndex(p => p.id === lastHand.winnerId);
+    const playersReady = gameState.currentRound.currentHand?.playersReady || [];
+    const hasClicked = playersReady.includes(myPlayerId);
+
+    // Winner text
+    const mobile = isMobile();
+    const winnerText = new Text({
+      text: `Player ${winnerIndex + 1} wins this Hand!`,
+      style: { fontSize: mobile ? 24 : 32, fill: 0xffd700, fontWeight: 'bold' }
+    });
+    winnerText.anchor.set(0.5);
+    winnerText.x = window.innerWidth / 2;
+    winnerText.y = vh(4);
+    this.handContainer.addChild(winnerText);
+
+    // Ready counter
+    const readyText = new Text({
+      text: `${playersReady.length}/${gameState.players.length}`,
+      style: { fontSize: 24, fill: 0xaaaaaa }
+    });
+    readyText.anchor.set(0.5);
+    readyText.x = window.innerWidth / 2;
+    readyText.y = vh(10);
+    this.handContainer.addChild(readyText);
+
+    // Continue button
+    const continueBtn = new Button(
+      hasClicked ? 'Waiting...' : 'Continue',
+      200,
+      60,
+      hasClicked ? 0x666666 : 0x4caf50
+    );
+    continueBtn.x = window.innerWidth / 2 - 100;
+    continueBtn.y = vh(14);
+    if (!hasClicked) {
+      continueBtn.on('pointerdown', async () => {
+        try {
+          const result = await continueGame();
+          if (!result.success) {
+            console.error('Failed to continue:', result.error);
+          }
+        } catch (error) {
+          console.error('Error continuing:', error);
+        }
+      });
+    }
+    this.handContainer.addChild(continueBtn);
+  }
+
+  renderTableCards(gameState: GameState, winnerId?: string): void {
     // Clear existing table cards
     this.clearTable();
 
@@ -76,6 +136,11 @@ export class PlayingPhase {
       const cardComponent = new Card(playedCard.card, cardDims.width, cardDims.height);
       cardComponent.x = x;
       cardComponent.y = y;
+
+      // Highlight winner card
+      if (winnerId && playedCard.playerId === winnerId) {
+        cardComponent.setWinnerCard();
+      }
 
       this.tableContainer.addChild(cardComponent);
     });

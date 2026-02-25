@@ -1,12 +1,10 @@
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Graphics, Text, Sprite, Assets } from 'pixi.js';
 import { GameState, SUIT_SYMBOLS, SUIT_COLORS } from '../types/game-types';
 import { getPlayerId } from '../utils/playerId';
 import { LAYOUT, vh, vw, isMobile, getCardDimensions } from '../utils/responsive';
-import { InfoPanel } from './game/components/InfoPanel';
-import { PlayerIndicators } from './game/components/PlayerIndicators';
+import { GamePlayerIndicators } from './game/components/GamePlayerIndicators';
 import { BettingPhase } from './game/phases/BettingPhase';
 import { PlayingPhase } from './game/phases/PlayingPhase';
-import { WinnerOverlay } from './game/overlays/WinnerOverlay';
 import { RoundCompleteOverlay } from './game/overlays/RoundCompleteOverlay';
 import { GameCompleteOverlay } from './game/overlays/GameCompleteOverlay';
 import { continueGame } from '../api/api';
@@ -17,17 +15,18 @@ export class GameScreen {
   private mesaCard: Container;
   private handContainer: Container;
   private tableCardsContainer: Container;
-  private infoPanel: InfoPanel;
-  private playerIndicators: PlayerIndicators;
+  private playerIndicators: GamePlayerIndicators;
   private bettingPhase: BettingPhase;
   private playingPhase: PlayingPhase;
+  private roundTitle: Text;
+  private shareButton: Container;
 
-  private winnerOverlay: Container | null = null;
   private roundCompleteOverlay: Container | null = null;
   private gameCompleteOverlay: Container | null = null;
 
   private gameState: GameState | null = null;
   private myPlayerId: string;
+  private roomId: string;
 
   constructor(roomId: string) {
     this.container = new Container();
@@ -36,45 +35,85 @@ export class GameScreen {
     this.handContainer = new Container();
     this.tableCardsContainer = new Container();
     this.myPlayerId = getPlayerId();
+    this.roomId = roomId;
 
     // Initialize components
-    this.infoPanel = new InfoPanel();
-    this.playerIndicators = new PlayerIndicators();
+    this.playerIndicators = new GamePlayerIndicators();
     this.bettingPhase = new BettingPhase(this.container);
     this.playingPhase = new PlayingPhase(this.handContainer, this.tableCardsContainer);
+    
+    // Round title
+    this.roundTitle = new Text({
+      text: '',
+      style: { fontSize: isMobile() ? 16 : 20, fill: 0xffffff, fontWeight: 'bold' }
+    });
+    
+    // Share button
+    this.shareButton = this.createShareButton();
 
     this.createUI();
   }
 
   private createUI(): void {
     this.container.addChild(this.table);
-    this.container.addChild(this.mesaCard);
     this.container.addChild(this.playerIndicators);
-    this.container.addChild(this.infoPanel);
+    this.container.addChild(this.mesaCard);
     this.container.addChild(this.tableCardsContainer);
     this.container.addChild(this.handContainer);
+    this.container.addChild(this.roundTitle);
+    this.container.addChild(this.shareButton);
     this.resizeGame();
   }
 
+  private createShareButton(): Container {
+    const btn = new Container();
+    btn.eventMode = 'static';
+    btn.cursor = 'pointer';
+
+    const size = isMobile() ? 36 : 40;
+    const bg = new Graphics();
+    bg.roundRect(0, 0, size, size, 8);
+    bg.fill(0x2a9d8f);
+    btn.addChild(bg);
+
+    // Load SVG icon asynchronously
+    Assets.load('/icons/icons8-share.svg').then(texture => {
+      const icon = new Sprite(texture);
+      icon.width = size * 0.6;
+      icon.height = size * 0.6;
+      icon.x = size * 0.2;
+      icon.y = size * 0.2;
+      icon.tint = 0xffffff;
+      btn.addChild(icon);
+    });
+
+    btn.on('pointerdown', () => {
+      const url = `${window.location.origin}/re-join?roomId=${this.roomId}`;
+      navigator.clipboard.writeText(url).then(() => {
+        console.log('Share link copied:', url);
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+      });
+    });
+
+    return btn;
+  }
+
   resizeGame(): void {
-    const headerArea = LAYOUT.getHeaderArea();
     const boardArea = LAYOUT.getBoardArea();
     const handArea = LAYOUT.getHandArea();
 
-    // Table (game board area)
+    // Table (game board area) - bottom section for played cards + mesa
     this.table.clear();
     this.table.roundRect(
-      vw(5),                    // 5% from left
-      boardArea.y + vh(2),      // Start after header + 2% padding
-      vw(90),                   // 90% width
-      boardArea.height - vh(4), // Full board height - padding
+      vw(5),
+      boardArea.y + boardArea.height * 0.3, // Start at 30% down the board area
+      vw(90),
+      boardArea.height * 0.7 - vh(2), // 70% of board height
       20
     );
     this.table.fill(0x0f3d3e);
     this.table.stroke({ width: 3, color: 0x2a9d8f });
-
-    // Info panel stays in header area
-    this.infoPanel.y = headerArea.y;
 
     // Hand container in hand area
     this.handContainer.x = 0;
@@ -82,7 +121,26 @@ export class GameScreen {
 
     // Table cards container in center of board
     this.tableCardsContainer.x = 0;
-    this.tableCardsContainer.y = boardArea.y;
+    this.tableCardsContainer.y = boardArea.y + boardArea.height * 0.3;
+
+    // Position round title (top-left)
+    const horizontalPadding = isMobile() ? vw(5) : vw(3);
+    const verticalPadding = isMobile() ? vh(2) : vh(1);
+    const buttonSize = isMobile() ? 36 : 40;
+    
+    // Center button and title vertically with each other
+    const titleCenterY = verticalPadding + buttonSize / 2;
+    
+    this.roundTitle.anchor.set(0, 0.5);
+    this.roundTitle.x = horizontalPadding;
+    this.roundTitle.y = titleCenterY;
+
+    // Position player indicators below title
+    this.playerIndicators.y = verticalPadding + buttonSize;
+
+    // Position share button (top-right, vertically aligned with title)
+    this.shareButton.x = window.innerWidth - horizontalPadding - buttonSize;
+    this.shareButton.y = verticalPadding;
   }
 
   updateGameState(gameState: GameState): void {
@@ -98,16 +156,6 @@ export class GameScreen {
 
   private handleOverlays(previousStatus?: string): void {
     if (!this.gameState) return;
-
-    // Hand complete overlay
-    if (this.gameState.status === 'hand_complete' && previousStatus !== 'hand_complete') {
-      this.showWinnerOverlay();
-    } else if (this.gameState.status === 'hand_complete' && this.winnerOverlay) {
-      this.hideWinnerOverlay();
-      this.showWinnerOverlay();
-    } else if (this.gameState.status !== 'hand_complete' && this.winnerOverlay) {
-      this.hideWinnerOverlay();
-    }
 
     // Round complete overlay
     if (this.gameState.status === 'round_complete' && previousStatus !== 'round_complete') {
@@ -128,11 +176,11 @@ export class GameScreen {
   private render(): void {
     if (!this.gameState) return;
 
-    // Update info panel
-    this.infoPanel.update(this.gameState, this.myPlayerId, window.innerWidth);
-
     // Update player indicators
     this.playerIndicators.update(this.gameState, this.myPlayerId);
+
+    // Update round title
+    this.updateRoundTitle();
 
     // Update mesa card
     this.renderMesaCard();
@@ -152,21 +200,26 @@ export class GameScreen {
         this.playingPhase.renderHand(this.gameState, this.myPlayerId);
         this.playingPhase.renderTableCards(this.gameState);
         break;
+
+      case 'hand_complete':
+        const lastHand = this.gameState.currentRound?.completedHands[
+          this.gameState.currentRound.completedHands.length - 1
+        ];
+        this.playingPhase.renderHandComplete(this.gameState, this.myPlayerId);
+        this.playingPhase.renderTableCards(this.gameState, lastHand?.winnerId);
+        break;
     }
   }
 
-  private showWinnerOverlay(): void {
-    if (!this.gameState) return;
-    this.winnerOverlay = new WinnerOverlay(this.gameState, this.myPlayerId, () => this.handleContinue());
-    this.container.addChild(this.winnerOverlay);
-  }
-
-  private hideWinnerOverlay(): void {
-    if (this.winnerOverlay) {
-      this.container.removeChild(this.winnerOverlay);
-      this.winnerOverlay.destroy({ children: true });
-      this.winnerOverlay = null;
+  private updateRoundTitle(): void {
+    if (!this.gameState?.currentRound) {
+      this.roundTitle.text = '';
+      return;
     }
+
+    const round = this.gameState.currentRound;
+    const direction = round.direction === 'up' ? 'Going Up' : 'Going Down';
+    this.roundTitle.text = `Round ${round.roundNumber} of ${this.gameState.numberOfRounds} (${direction})`;
   }
 
   private showRoundCompleteOverlay(): void {
@@ -237,10 +290,10 @@ export class GameScreen {
     cardText.y = mobile ? 20 : 24;
     this.mesaCard.addChild(cardText);
 
-    // Position in top-left corner of the game board
+    // Position inside the board area (top-left of board)
     const boardArea = LAYOUT.getBoardArea();
     this.mesaCard.x = vw(7);
-    this.mesaCard.y = boardArea.y + vh(4);
+    this.mesaCard.y = boardArea.y + boardArea.height * 0.3 + vh(2);
   }
 
   getContainer(): Container {
@@ -250,7 +303,6 @@ export class GameScreen {
   destroy(): void {
     this.bettingPhase.clear();
     this.playingPhase.clear();
-    if (this.winnerOverlay) this.winnerOverlay.destroy({ children: true });
     if (this.roundCompleteOverlay) this.roundCompleteOverlay.destroy({ children: true });
     if (this.gameCompleteOverlay) this.gameCompleteOverlay.destroy({ children: true });
     this.container.destroy({ children: true });

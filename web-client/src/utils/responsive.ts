@@ -19,7 +19,7 @@ export function getResponsiveSizes(): ResponsiveSizes {
   const width = window.innerWidth;
   const height = window.innerHeight;
   const isMobile = width < 768;
-  
+
   return {
     width,
     height,
