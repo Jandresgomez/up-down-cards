@@ -8,7 +8,7 @@ const router = Router();
 
 router.post('/createRoom', async (req: Request, res: Response) => {
   try {
-    const { playerId, numberOfRounds = 5 } = req.body;
+    const { playerId, numberOfRounds = 5, name = '', shorthand = '' } = req.body;
 
     if (!playerId) {
       return res.status(400).json({ error: 'Player ID is required' });
@@ -44,6 +44,8 @@ router.post('/createRoom', async (req: Request, res: Response) => {
     await db.collection('games').doc(roomId).set(gameState);
     await db.collection('players').doc(playerId).set({
       id: playerId,
+      name,
+      shorthand,
       roomId,
       joinedAt: Date.now()
     });
@@ -56,7 +58,7 @@ router.post('/createRoom', async (req: Request, res: Response) => {
 
 router.post('/joinRoom', async (req: Request, res: Response) => {
   try {
-    const { roomId, playerId } = req.body;
+    const { roomId, playerId, name = '', shorthand = '' } = req.body;
 
     if (!roomId || typeof roomId !== 'string') {
       return res.status(400).json({ error: 'Room ID is required' });
@@ -105,6 +107,8 @@ router.post('/joinRoom', async (req: Request, res: Response) => {
 
       transaction.set(db.collection('players').doc(playerId), {
         id: playerId,
+        name,
+        shorthand,
         roomId,
         joinedAt: Date.now()
       });
@@ -318,6 +322,32 @@ router.post('/closeRoom', async (req: Request, res: Response) => {
 
 router.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok' });
+});
+
+router.post('/getPlayers', async (req: Request, res: Response) => {
+  try {
+    const { playerIds } = req.body;
+
+    if (!playerIds || !Array.isArray(playerIds) || playerIds.length === 0) {
+      return res.status(400).json({ error: 'playerIds array is required' });
+    }
+
+    const playerDocs = await Promise.all(
+      playerIds.map((id: string) => db.collection('players').doc(id).get())
+    );
+
+    const players: Record<string, { name: string; shorthand: string }> = {};
+    playerDocs.forEach(doc => {
+      if (doc.exists) {
+        const data = doc.data()!;
+        players[doc.id] = { name: data.name || '', shorthand: data.shorthand || '' };
+      }
+    });
+
+    res.json({ success: true, players });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 export default router;

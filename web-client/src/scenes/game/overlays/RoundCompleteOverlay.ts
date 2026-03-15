@@ -4,7 +4,7 @@ import { Button } from '../components/Button';
 import { isMobile } from '../../../utils/responsive';
 
 export class RoundCompleteOverlay extends Container {
-  constructor(gameState: GameState, myPlayerId: string, onContinue: () => void) {
+  constructor(gameState: GameState, myPlayerId: string, playerNames: Record<string, { name: string; shorthand: string }>, onContinue: () => void) {
     super();
 
     if (!gameState.currentRound) return;
@@ -54,8 +54,10 @@ export class RoundCompleteOverlay extends Container {
     let yPos = roundInfo.y + (mobile ? 50 : 60);
     gameState.players.forEach((player, index) => {
       const points = player.bet === player.handsWon ? 10 + 2 * player.handsWon : 0;
+      const profile = playerNames[player.id];
+      const label = profile?.name || profile?.shorthand || `P${index + 1}`;
       const scoreText = new Text({
-        text: `P${index + 1}: Bet ${player.bet}, Won ${player.handsWon} → +${points} (Total: ${player.totalScore})`,
+        text: `${label}: Bet ${player.bet}, Won ${player.handsWon} → +${points} (Total: ${player.totalScore})`,
         style: { fontSize: mobile ? 14 : 20, fill: points > 0 ? 0x4caf50 : 0xff6b6b }
       });
       scoreText.anchor.set(0.5);

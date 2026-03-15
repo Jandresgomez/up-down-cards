@@ -2,13 +2,23 @@ import { Container, Graphics, Text } from 'pixi.js';
 import { GameState } from '../../../types/game-types';
 import { getResponsiveSizes } from '../../../utils/responsive';
 
+export type IndicatorMode = 'betting' | 'playing';
+
 export class GamePlayerIndicators extends Container {
   private gameState: GameState | null = null;
   private myPlayerId: string = '';
+  private playerNames: Record<string, { name: string; shorthand: string }> = {};
+  private mode: IndicatorMode;
 
-  update(gameState: GameState, myPlayerId: string): void {
+  constructor(mode: IndicatorMode = 'playing') {
+    super();
+    this.mode = mode;
+  }
+
+  update(gameState: GameState, myPlayerId: string, playerNames: Record<string, { name: string; shorthand: string }> = {}): void {
     this.gameState = gameState;
     this.myPlayerId = myPlayerId;
+    this.playerNames = playerNames;
     this.render();
   }
 
@@ -18,14 +28,22 @@ export class GamePlayerIndicators extends Container {
 
     const sizes = getResponsiveSizes();
     const players = this.gameState.players;
-    const currentHand = this.gameState.currentRound.currentHand;
-    const currentPlayerId = currentHand ? currentHand.handOrder[currentHand.currentPlayerIndex] : null;
+    const isBetting = this.mode === 'betting';
 
-    const indicatorWidth = sizes.isMobile ? 100 : 120;
-    const indicatorHeight = sizes.isMobile ? 50 : 60;
+    // Determine current player based on mode
+    let currentPlayerId: string | null = null;
+    if (isBetting) {
+      const { bettingOrder, currentBettingIndex } = this.gameState.currentRound;
+      currentPlayerId = bettingOrder[currentBettingIndex] ?? null;
+    } else {
+      const currentHand = this.gameState.currentRound.currentHand;
+      currentPlayerId = currentHand ? currentHand.handOrder[currentHand.currentPlayerIndex] : null;
+    }
+
+    const indicatorWidth = sizes.isMobile ? (isBetting ? 140 : 110) : (isBetting ? 160 : 130);
+    const indicatorHeight = sizes.isMobile ? (isBetting ? 44 : 56) : (isBetting ? 50 : 66);
     const spacing = 10;
 
-    // Calculate how many indicators fit per row
     const availableWidth = sizes.width - (sizes.spacing * 2);
     const indicatorsPerRow = Math.floor((availableWidth + spacing) / (indicatorWidth + spacing));
 
@@ -34,7 +52,6 @@ export class GamePlayerIndicators extends Container {
     let currentRow = 0;
 
     players.forEach((player, index) => {
-      // New row if we've filled the current one
       if (index > 0 && index % indicatorsPerRow === 0) {
         currentRow++;
         currentX = sizes.spacing;
@@ -51,31 +68,43 @@ export class GamePlayerIndicators extends Container {
       bg.stroke({ width: 2, color: isCurrentPlayer ? 0x66ff66 : 0x4a4a5e });
       indicator.addChild(bg);
 
-      // Player shorthand
+      // Player name
+      const profile = this.playerNames[player.id];
+      const displayName = profile?.name || player.shorthand || `P${index + 1}`;
       const nameText = new Text({
-        text: player.shorthand || `P${index + 1}`,
-        style: { fontSize: sizes.isMobile ? 14 : 16, fill: 0xffffff, fontWeight: 'bold' }
+        text: displayName,
+        style: { fontSize: sizes.isMobile ? 16 : 18, fill: 0xffffff, fontWeight: 'bold' }
       });
-      nameText.x = 8;
+      nameText.x = 10;
       nameText.y = 6;
       indicator.addChild(nameText);
 
-      // Bet and wins
+      // Bet text
+      const hasBet = player.bet !== null;
+      const betLabel = isBetting
+        ? (hasBet ? `Bet: ${player.bet}` : '...')
+        : `Bet: ${player.bet ?? '-'}`;
       const betText = new Text({
-        text: `Bet: ${player.bet ?? '-'}`,
-        style: { fontSize: sizes.isMobile ? 11 : 13, fill: 0xaaaaaa }
+        text: betLabel,
+        style: {
+          fontSize: sizes.isMobile ? 14 : 15,
+          fill: 0xffffff
+        }
       });
-      betText.x = 8;
-      betText.y = sizes.isMobile ? 24 : 28;
+      betText.x = 10;
+      betText.y = sizes.isMobile ? 26 : 28;
       indicator.addChild(betText);
 
-      const winsText = new Text({
-        text: `Won: ${player.handsWon}`,
-        style: { fontSize: sizes.isMobile ? 11 : 13, fill: 0xaaaaaa }
-      });
-      winsText.x = 8;
-      winsText.y = sizes.isMobile ? 36 : 44;
-      indicator.addChild(winsText);
+      // Wins (playing mode only)
+      if (!isBetting) {
+        const winsText = new Text({
+          text: `Won: ${player.handsWon}`,
+          style: { fontSize: sizes.isMobile ? 14 : 15, fill: 0xffffff }
+        });
+        winsText.x = 10;
+        winsText.y = sizes.isMobile ? 40 : 46;
+        indicator.addChild(winsText);
+      }
 
       indicator.x = currentX;
       indicator.y = currentY;

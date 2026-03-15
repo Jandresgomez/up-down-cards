@@ -3,11 +3,14 @@ import { GameState, SUIT_SYMBOLS, SUIT_COLORS } from '../../../types/game-types'
 import { getResponsiveSizes, isMobile, getCardDimensions } from '../../../utils/responsive';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
+import { GamePlayerIndicators } from '../components/GamePlayerIndicators';
+import { RoundTitle } from '../components/RoundTitle';
 import { getMyHand } from '../../../utils/gameHelpers';
 
 export class BettingScene extends Container {
   private gameState: GameState;
   private myPlayerId: string;
+  private playerNames: Record<string, { name: string; shorthand: string }>;
   private validBets: number[];
   private maxBet: number;
   private isMyTurn: boolean;
@@ -17,6 +20,8 @@ export class BettingScene extends Container {
   private betText: Text;
   private warningText: Text;
   private bettingPanel: Container;
+  private playerIndicators: GamePlayerIndicators;
+  private roundTitle: RoundTitle;
 
   constructor(
     gameState: GameState,
@@ -24,11 +29,13 @@ export class BettingScene extends Container {
     validBets: number[],
     maxBet: number,
     isMyTurn: boolean,
-    onConfirm: (bet: number) => void
+    onConfirm: (bet: number) => void,
+    playerNames: Record<string, { name: string; shorthand: string }> = {}
   ) {
     super();
     this.gameState = gameState;
     this.myPlayerId = myPlayerId;
+    this.playerNames = playerNames;
     this.validBets = validBets;
     this.maxBet = maxBet;
     this.isMyTurn = isMyTurn;
@@ -37,6 +44,8 @@ export class BettingScene extends Container {
     this.bettingPanel = new Container();
     this.betText = new Text({ text: '0', style: { fontSize: 48, fill: 0x4caf50, fontWeight: 'bold' } });
     this.warningText = new Text({ text: '', style: { fontSize: 16, fill: 0xff6b6b } });
+    this.playerIndicators = new GamePlayerIndicators('betting');
+    this.roundTitle = new RoundTitle();
 
     this.createUI();
     this.resize();
@@ -55,9 +64,18 @@ export class BettingScene extends Container {
 
     let currentY = sizes.spacing;
 
+    // Round title at top
+    this.roundTitle.updateFromState(this.gameState);
+    this.roundTitle.x = sizes.spacing;
+    this.roundTitle.y = currentY;
+    this.addChild(this.roundTitle);
+    currentY += 30;
+
     // Player indicators at top (4xN grid, centered)
     const topHeight = sizes.height * 0.25;
-    this.renderPlayerIndicators(currentY, topHeight);
+    this.playerIndicators.update(this.gameState, this.myPlayerId, this.playerNames);
+    this.playerIndicators.y = currentY;
+    this.addChild(this.playerIndicators);
     currentY += topHeight + sizes.spacing;
 
     // Betting controls (center) with mesa inside
@@ -110,66 +128,6 @@ export class BettingScene extends Container {
     this.addChild(mesaContainer);
   }
 
-  private renderPlayerIndicators(startY: number, areaHeight: number): void {
-    if (!this.gameState.currentRound) return;
-
-    const { bettingOrder, currentBettingIndex } = this.gameState.currentRound;
-    const sizes = getResponsiveSizes();
-
-    const indicatorWidth = sizes.isMobile ? 140 : 160;
-    const indicatorHeight = sizes.isMobile ? 40 : 45;
-    const spacing = 10;
-    const maxRows = 4; // Changed from 3 to 4
-
-    // Calculate grid dimensions
-    const numPlayers = bettingOrder.length;
-    const numCols = Math.ceil(numPlayers / maxRows);
-
-    // Center the grid
-    const gridWidth = numCols * (indicatorWidth + spacing) - spacing;
-    const startX = (sizes.width - gridWidth) / 2;
-
-    bettingOrder.forEach((playerId, index) => {
-      const player = this.gameState.players.find(p => p.id === playerId);
-      if (!player) return;
-
-      const col = Math.floor(index / maxRows);
-      const row = index % maxRows;
-
-      const indicator = new Container();
-      const isCurrentPlayer = index === currentBettingIndex;
-      const hasBet = player.bet !== null;
-
-      // Background
-      const bg = new Graphics();
-      bg.roundRect(0, 0, indicatorWidth, indicatorHeight, 8);
-      bg.fill(isCurrentPlayer ? 0x4caf50 : 0x2a2a3e);
-      bg.stroke({ width: 2, color: isCurrentPlayer ? 0x66ff66 : 0x4a4a5e });
-      indicator.addChild(bg);
-
-      // Player name
-      const nameText = new Text({
-        text: playerId === this.myPlayerId ? 'You' : `Player ${index + 1}`,
-        style: { fontSize: sizes.isMobile ? 14 : 16, fill: 0xffffff, fontWeight: 'bold' }
-      });
-      nameText.x = 10;
-      nameText.y = sizes.isMobile ? 5 : 7;
-      indicator.addChild(nameText);
-
-      // Bet display
-      const betText = new Text({
-        text: hasBet ? `Bet: ${player.bet}` : '...',
-        style: { fontSize: sizes.isMobile ? 12 : 14, fill: hasBet ? 0x4caf50 : 0x888888 }
-      });
-      betText.x = 10;
-      betText.y = sizes.isMobile ? 22 : 25;
-      indicator.addChild(betText);
-
-      indicator.x = startX + col * (indicatorWidth + spacing);
-      indicator.y = startY + row * (indicatorHeight + spacing);
-      this.addChild(indicator);
-    });
-  }
 
   private renderHand(startY: number): void {
     const myHand = getMyHand(this.gameState, this.myPlayerId);

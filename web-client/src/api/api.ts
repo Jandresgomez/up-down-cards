@@ -1,4 +1,4 @@
-import { getPlayerId } from '../utils/playerId';
+import { getPlayerId, getPlayerName, getPlayerShorthand } from '../utils/playerId';
 import { Card } from '../types/game-types';
 
 // API Base URL - defaults to localhost in dev, uses env variable in production
@@ -51,6 +51,12 @@ export interface CloseRoomResponse {
   error?: string;
 }
 
+export interface GetPlayersResponse {
+  success: boolean;
+  players: Record<string, { name: string; shorthand: string }>;
+  error?: string;
+}
+
 // Helper function for API calls
 async function apiCall<T>(endpoint: string, data: any): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -71,7 +77,9 @@ async function apiCall<T>(endpoint: string, data: any): Promise<T> {
 
 export async function createNewRoom(numberOfRounds: number = 5): Promise<CreateRoomResponse> {
   const playerId = getPlayerId();
-  return apiCall<CreateRoomResponse>('/createRoom', { playerId, numberOfRounds });
+  const name = getPlayerName() || '';
+  const shorthand = getPlayerShorthand() || '';
+  return apiCall<CreateRoomResponse>('/createRoom', { playerId, numberOfRounds, name, shorthand });
 }
 
 export async function joinRoom(roomId: string): Promise<JoinRoomResponse> {
@@ -81,9 +89,11 @@ export async function joinRoom(roomId: string): Promise<JoinRoomResponse> {
       error: 'Provided room ID is not valid'
     };
   }
-  
+
   const playerId = getPlayerId();
-  return apiCall<JoinRoomResponse>('/joinRoom', { roomId, playerId });
+  const name = getPlayerName() || '';
+  const shorthand = getPlayerShorthand() || '';
+  return apiCall<JoinRoomResponse>('/joinRoom', { roomId, playerId, name, shorthand });
 }
 
 export async function updateRoomSettings(roomId: string, settings: { numberOfRounds?: number; maxPlayers?: number }): Promise<UpdateRoomSettingsResponse> {
@@ -119,4 +129,8 @@ export async function leaveRoom(roomId: string): Promise<LeaveRoomResponse> {
 export async function closeRoom(roomId: string): Promise<CloseRoomResponse> {
   const playerId = getPlayerId();
   return apiCall<CloseRoomResponse>('/closeRoom', { roomId, playerId });
+}
+
+export async function getPlayers(playerIds: string[]): Promise<GetPlayersResponse> {
+  return apiCall<GetPlayersResponse>('/getPlayers', { playerIds });
 }

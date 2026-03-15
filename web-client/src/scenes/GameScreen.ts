@@ -3,11 +3,12 @@ import { GameState, SUIT_SYMBOLS, SUIT_COLORS } from '../types/game-types';
 import { getPlayerId } from '../utils/playerId';
 import { LAYOUT, vh, vw, isMobile, getCardDimensions } from '../utils/responsive';
 import { GamePlayerIndicators } from './game/components/GamePlayerIndicators';
+import { RoundTitle } from './game/components/RoundTitle';
 import { BettingPhase } from './game/phases/BettingPhase';
 import { PlayingPhase } from './game/phases/PlayingPhase';
 import { RoundCompleteOverlay } from './game/overlays/RoundCompleteOverlay';
 import { GameCompleteOverlay } from './game/overlays/GameCompleteOverlay';
-import { continueGame } from '../api/api';
+import { continueGame, getPlayers } from '../api/api';
 
 export class GameScreen {
   private container: Container;
@@ -18,7 +19,7 @@ export class GameScreen {
   private playerIndicators: GamePlayerIndicators;
   private bettingPhase: BettingPhase;
   private playingPhase: PlayingPhase;
-  private roundTitle: Text;
+  private roundTitle: RoundTitle;
   private shareButton: Container;
 
   private roundCompleteOverlay: Container | null = null;
@@ -27,6 +28,7 @@ export class GameScreen {
   private gameState: GameState | null = null;
   private myPlayerId: string;
   private roomId: string;
+  private playerNames: Record<string, { name: string; shorthand: string }> = {};
 
   constructor(roomId: string) {
     this.container = new Container();
@@ -41,13 +43,10 @@ export class GameScreen {
     this.playerIndicators = new GamePlayerIndicators();
     this.bettingPhase = new BettingPhase(this.container);
     this.playingPhase = new PlayingPhase(this.handContainer, this.tableCardsContainer);
-    
+
     // Round title
-    this.roundTitle = new Text({
-      text: '',
-      style: { fontSize: isMobile() ? 16 : 20, fill: 0xffffff, fontWeight: 'bold' }
-    });
-    
+    this.roundTitle = new RoundTitle();
+
     // Share button
     this.shareButton = this.createShareButton();
 
@@ -127,10 +126,10 @@ export class GameScreen {
     const horizontalPadding = isMobile() ? vw(5) : vw(3);
     const verticalPadding = isMobile() ? vh(2) : vh(1);
     const buttonSize = isMobile() ? 36 : 40;
-    
+
     // Center button and title vertically with each other
     const titleCenterY = verticalPadding + buttonSize / 2;
-    
+
     this.roundTitle.anchor.set(0, 0.5);
     this.roundTitle.x = horizontalPadding;
     this.roundTitle.y = titleCenterY;
@@ -146,6 +145,18 @@ export class GameScreen {
   updateGameState(gameState: GameState): void {
     const previousStatus = this.gameState?.status;
     this.gameState = gameState;
+
+    // Fetch player names if we don't have them yet
+    const playerIds = gameState.players.map(p => p.id);
+    const missingIds = playerIds.filter(id => !(id in this.playerNames));
+    if (missingIds.length > 0) {
+      getPlayers(playerIds).then(res => {
+        if (res.success) {
+          this.playerNames = { ...this.playerNames, ...res.players };
+          this.render();
+        }
+      }).catch(() => { });
+    }
 
     // Handle overlays
     this.handleOverlays(previousStatus);
@@ -177,7 +188,7 @@ export class GameScreen {
     if (!this.gameState) return;
 
     // Update player indicators
-    this.playerIndicators.update(this.gameState, this.myPlayerId);
+    this.playerIndicators.update(this.gameState, this.myPlayerId, this.playerNames);
 
     // Update round title
     this.updateRoundTitle();
@@ -192,7 +203,7 @@ export class GameScreen {
     // Render based on status
     switch (this.gameState.status) {
       case 'betting':
-        this.bettingPhase.render(this.gameState, this.myPlayerId);
+        this.bettingPhase.render(this.gameState, this.myPlayerId, this.playerNames);
         this.playingPhase.renderHand(this.gameState, this.myPlayerId);
         break;
 
@@ -205,26 +216,20 @@ export class GameScreen {
         const lastHand = this.gameState.currentRound?.completedHands[
           this.gameState.currentRound.completedHands.length - 1
         ];
-        this.playingPhase.renderHandComplete(this.gameState, this.myPlayerId);
+        this.playingPhase.renderHandComplete(this.gameState, this.myPlayerId, this.playerNames);
         this.playingPhase.renderTableCards(this.gameState, lastHand?.winnerId);
         break;
     }
   }
 
   private updateRoundTitle(): void {
-    if (!this.gameState?.currentRound) {
-      this.roundTitle.text = '';
-      return;
-    }
-
-    const round = this.gameState.currentRound;
-    const direction = round.direction === 'up' ? 'Going Up' : 'Going Down';
-    this.roundTitle.text = `Round ${round.roundNumber} of ${this.gameState.numberOfRounds} (${direction})`;
+    if (!this.gameState) return;
+    this.roundTitle.updateFromState(this.gameState);
   }
 
   private showRoundCompleteOverlay(): void {
     if (!this.gameState) return;
-    this.roundCompleteOverlay = new RoundCompleteOverlay(this.gameState, this.myPlayerId, () => this.handleContinue());
+    this.roundCompleteOverlay = new RoundCompleteOverlay(this.gameState, this.myPlayerId, this.playerNames, () => this.handleContinue());
     this.container.addChild(this.roundCompleteOverlay);
   }
 
@@ -238,7 +243,7 @@ export class GameScreen {
 
   private showGameCompleteOverlay(): void {
     if (!this.gameState) return;
-    this.gameCompleteOverlay = new GameCompleteOverlay(this.gameState);
+    this.gameCompleteOverlay = new GameCompleteOverlay(this.gameState, this.playerNames);
     this.container.addChild(this.gameCompleteOverlay);
   }
 

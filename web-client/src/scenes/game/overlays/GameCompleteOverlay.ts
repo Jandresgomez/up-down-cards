@@ -3,7 +3,7 @@ import { GameState } from '../../../types/game-types';
 import { isMobile } from '../../../utils/responsive';
 
 export class GameCompleteOverlay extends Container {
-  constructor(gameState: GameState) {
+  constructor(gameState: GameState, playerNames: Record<string, { name: string; shorthand: string }> = {}) {
     super();
 
     const screenWidth = window.innerWidth;
@@ -44,14 +44,15 @@ export class GameCompleteOverlay extends Container {
     // Display rankings
     let yPos = title.y + (mobile ? 60 : 80);
     rankedPlayers.forEach((player, index) => {
-      const playerIndex = gameState.players.findIndex(p => p.id === player.id);
       const rank = index + 1;
       const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
-      
+      const profile = playerNames[player.id];
+      const label = profile?.name || profile?.shorthand || `P${gameState.players.findIndex(p => p.id === player.id) + 1}`;
+
       const rankText = new Text({
-        text: `${medal} P${playerIndex + 1}: ${player.totalScore} pts`,
-        style: { 
-          fontSize: mobile ? (rank === 1 ? 24 : 18) : (rank === 1 ? 36 : 28), 
+        text: `${medal} ${label}: ${player.totalScore} pts`,
+        style: {
+          fontSize: mobile ? (rank === 1 ? 24 : 18) : (rank === 1 ? 36 : 28),
           fill: rank === 1 ? 0xffd700 : rank === 2 ? 0xc0c0c0 : rank === 3 ? 0xcd7f32 : 0xffffff,
           fontWeight: rank === 1 ? 'bold' : 'normal'
         }

@@ -56,7 +56,7 @@ export class PlayingPhase {
     });
   }
 
-  renderHandComplete(gameState: GameState, myPlayerId: string): void {
+  renderHandComplete(gameState: GameState, myPlayerId: string, playerNames: Record<string, { name: string; shorthand: string }> = {}): void {
     this.clearHand();
 
     if (!gameState.currentRound) return;
@@ -67,13 +67,15 @@ export class PlayingPhase {
     if (!lastHand) return;
 
     const winnerIndex = gameState.players.findIndex(p => p.id === lastHand.winnerId);
+    const profile = playerNames[lastHand.winnerId];
+    const winnerLabel = profile?.name || profile?.shorthand || `Player ${winnerIndex + 1}`;
     const playersReady = gameState.currentRound.currentHand?.playersReady || [];
     const hasClicked = playersReady.includes(myPlayerId);
 
     // Winner text
     const mobile = isMobile();
     const winnerText = new Text({
-      text: `Player ${winnerIndex + 1} wins this Hand!`,
+      text: `${winnerLabel} wins this Hand!`,
       style: { fontSize: mobile ? 24 : 32, fill: 0xffd700, fontWeight: 'bold' }
     });
     winnerText.anchor.set(0.5);

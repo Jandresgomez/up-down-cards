@@ -12,7 +12,7 @@ export class BettingPhase {
     this.container = container;
   }
 
-  render(gameState: GameState, myPlayerId: string): void {
+  render(gameState: GameState, myPlayerId: string, playerNames: Record<string, { name: string; shorthand: string }> = {}): void {
     // Clear existing UI
     this.clear();
 
@@ -30,7 +30,7 @@ export class BettingPhase {
       } catch (error) {
         console.error('Error placing bet:', error);
       }
-    });
+    }, playerNames);
 
     this.container.addChild(this.bettingScene);
   }

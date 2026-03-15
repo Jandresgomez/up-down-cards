@@ -6,7 +6,7 @@ export interface Card {
   rank: Rank;
 }
 
-export type GameStatus = 
+export type GameStatus =
   | 'waiting'
   | 'dealing'
   | 'betting'
@@ -91,7 +91,7 @@ export interface GameState {
   completedAt: number | null;
 }
 
-export type PlayerAction = 
+export type PlayerAction =
   | { type: 'START_GAME'; playerId: string }
   | { type: 'PLACE_BET'; playerId: string; bet: number }
   | { type: 'PLAY_CARD'; playerId: string; card: Card }

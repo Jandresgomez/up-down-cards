@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "vite --mode development",
+    "dev": "vite --mode development --host --port 3000",
     "build": "vite build --mode production",
     "release": "npm run build && firebase deploy --only hosting",
     "preview": "vite preview"

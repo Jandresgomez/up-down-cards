@@ -6,7 +6,7 @@ export interface Card {
   rank: Rank;
 }
 
-export type GameStatus = 
+export type GameStatus =
   | 'waiting'
   | 'dealing'
   | 'betting'
