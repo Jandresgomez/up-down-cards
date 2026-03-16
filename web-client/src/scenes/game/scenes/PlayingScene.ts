@@ -115,7 +115,7 @@ export class PlayingScene extends Container {
     // Player indicators
     this.playerIndicators.x = 0;
     this.playerIndicators.y = y;
-    y += this.playerIndicators.height + pad;
+    y += this.playerIndicators.height + sp;
 
     // --- TABLE AREA ---
     const tableAreaTop = y;
@@ -125,13 +125,13 @@ export class PlayingScene extends Container {
     this.mesaContainer.y = tableAreaTop;
 
     // Status text vertically centred alongside the mesa card
-    this.statusText.x = sp + mesaDims.width + pad;
+    this.statusText.x = sp + mesaDims.width + sp;
     this.statusText.y = tableAreaTop + Math.floor((mesaDims.height - this.statusText.height) / 2);
 
     // Played cards start below the mesa card row
     const tableCardsTop = tableAreaTop + mesaDims.height + pad;
-    const tableCardsWidth = sizes.width - sp * 2;
-    this.tableCards.layout(sp, tableCardsTop, tableCardsWidth);
+    const tableCardsWidth = sizes.width - sp * 4;
+    this.tableCards.layout(sp * 2, tableCardsTop, tableCardsWidth);
 
     // Table background spans the full table area (mesa row + 2 card rows)
     const tableAreaBottom = tableCardsTop + 2 * (cardDims.height + cardDims.margin);
@@ -146,7 +146,7 @@ export class PlayingScene extends Container {
     this.tableBackground.fill(0x0f3d3e);
     this.tableBackground.stroke({ width: 2, color: 0x2a9d8f });
 
-    y = tableAreaBottom + pad;
+    y = tableAreaBottom + sp;
 
     // --- HAND AREA ---
     if (this.playerHand) {

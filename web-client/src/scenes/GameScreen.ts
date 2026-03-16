@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import { GameState } from '../types/game-types';
 import { getPlayerId } from '../utils/playerId';
-import { isMobile, vw, vh } from '../utils/responsive';
+import { isMobile, vw, vh, getResponsiveSizes } from '../utils/responsive';
 import { BettingPhase } from './game/phases/BettingPhase';
 import { PlayingPhase } from './game/phases/PlayingPhase';
 import { RoundCompleteOverlay } from './game/overlays/RoundCompleteOverlay';
@@ -79,11 +79,10 @@ export class GameScreen {
   }
 
   resizeGame(): void {
-    const horizontalPadding = isMobile() ? vw(5) : vw(3);
-    const verticalPadding = isMobile() ? vh(2) : vh(1);
+    const sizes = getResponsiveSizes();
     const buttonSize = isMobile() ? 36 : 40;
-    this.shareButton.x = window.innerWidth - horizontalPadding - buttonSize;
-    this.shareButton.y = verticalPadding;
+    this.shareButton.x = window.innerWidth - sizes.spacing - buttonSize;
+    this.shareButton.y = sizes.padding;
     this.shareDomBtn.style.left = `${this.shareButton.x}px`;
     this.shareDomBtn.style.top = `${this.shareButton.y}px`;
     this.shareDomBtn.style.width = `${buttonSize}px`;

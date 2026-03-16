@@ -113,5 +113,15 @@ export class GamePlayerIndicators extends Container {
 
       currentX += indicatorWidth + Xspacing;
     });
+
+    if (indicatorsPerRow >= players.length) {
+      // add a fake extra row to compensate for only having one indicators row
+      const extraRowY = (currentRow + 1) * (indicatorHeight + sizes.spacing);
+      const extraRow = new Graphics();
+      extraRow.rect(0, 0, sizes.width, indicatorHeight).fill(0x000000, 0).stroke({ width: 0, color: 0x000000 });
+      extraRow.x = 0;
+      extraRow.y = extraRowY;
+      this.addChild(extraRow);
+    }
   }
 }

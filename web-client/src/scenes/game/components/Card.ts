@@ -38,7 +38,6 @@ export class Card extends Container {
       // rank + suit side by side, bottom left
       const rankFontSize = Math.floor(height * 0.6);
       const suitFontSize = Math.floor(height);
-      const row2Y = Math.floor(height * 0.50);
 
       const suitText = new Text({
         text: SUIT_SYMBOLS[card.suit],
@@ -59,16 +58,16 @@ export class Card extends Container {
       this.addChild(rankText);
     } else {
       // Rank top-left, suit bottom-right — fonts proportional to card height
-      const rankFontSize = Math.floor(height * 0.33);
-      const suitFontSize = Math.floor(height * 0.44);
+      const rankFontSize = Math.floor(height * 0.55);
+      const suitFontSize = Math.floor(height * 0.65);
 
       const rankText = new Text({
         text: card.rank,
         style: { fontSize: rankFontSize, fill: SUIT_COLORS[card.suit], fontWeight: 'bold' },
       });
       rankText.anchor.set(0, 0);
-      rankText.x = Math.floor(width * 0.08);
-      rankText.y = Math.floor(height * 0.05);
+      rankText.x = Math.floor(width * 0.04);
+      rankText.y = Math.floor(height * 0);
       this.addChild(rankText);
 
       const suitText = new Text({
@@ -76,8 +75,8 @@ export class Card extends Container {
         style: { fontSize: suitFontSize, fill: SUIT_COLORS[card.suit] },
       });
       suitText.anchor.set(1, 1);
-      suitText.x = width - Math.floor(width * 0.08);
-      suitText.y = height - Math.floor(height * 0.04);
+      suitText.x = width - Math.floor(width * 0.04);
+      suitText.y = height - Math.floor(height * -0.05);
       this.addChild(suitText);
     }
   }
@@ -95,6 +94,21 @@ export class Card extends Container {
       width: highlight ? 4 : 2,
       color: highlight ? 0x11ABD6 : 0x333333
     });
+  }
+
+  shake(): void {
+    const original = this.rotation;
+    const angle = (5 * Math.PI) / 180;
+    let step = 0;
+    const interval = setInterval(() => {
+      if (step >= 6) {
+        this.rotation = original;
+        clearInterval(interval);
+        return;
+      }
+      this.rotation = original + (step % 2 === 0 ? angle : -angle);
+      step++;
+    }, 50);
   }
 
   setWinnerCard(): void {

@@ -47,14 +47,14 @@ export class BettingControls extends Container {
     this.buildMesa(mesa);
 
     this.title = new Text({
-      text: isMyTurn ? 'Your Bet' : 'Waiting...',
+      text: isMyTurn ? 'Its your turn to bet!' : 'Waiting...',
       style: { fontSize: sizes.fontSize, fill: 0xffffff, fontWeight: 'bold' },
     });
     this.title.anchor.set(0.5, 0);
 
     this.betText = new Text({
       text: '0',
-      style: { fontSize: sizes.fontSize, fill: 0x4caf50, fontWeight: 'bold' },
+      style: { fontSize: sizes.titleSize, fill: 0xffffff, fontWeight: 'bold' },
     });
     this.betText.anchor.set(0.5);
 
@@ -110,49 +110,55 @@ export class BettingControls extends Container {
     }
   }
 
-  layout(width: number, height: number): void {
+  layout(width: number): void {
     const sizes = getResponsiveSizes();
 
-    this.bg.clear();
-    this.bg.roundRect(0, 0, width, height, 15);
-    this.bg.fill(0x1a1a2e);
-    this.bg.stroke({ width: 3, color: this.isMyTurn ? 0x4caf50 : 0x666666 });
+    let ySize = sizes.padding;
 
     const mesaDims = getMesaCardDimensions();
-    const mesaLabelH = Math.max(10, Math.floor(mesaDims.height * 0.14)) + 3;
-    this.mesaContainer.x = 10;
-    this.mesaContainer.y = mesaLabelH + 8;
+    this.mesaContainer.x = sizes.padding;
+    this.mesaContainer.y = sizes.padding; // fixed pos
 
-    // Bet controls centred in the remaining width to the right of the mesa card
-    const controlsLeft = 10 + mesaDims.width + 10;
-    const controlsWidth = width - controlsLeft - 10;
-    const controlsCentreX = controlsLeft + controlsWidth / 2;
+    const centerX = Math.floor(width / 2);
 
-    this.title.x = controlsCentreX;
-    this.title.y = 8;
+    // title in the middle
+    this.title.anchor.set(0.5, 0);
+    this.title.x = centerX;
+    this.title.y = ySize;
+    ySize += this.title.height;
 
     if (this.isMyTurn) {
       const btnW = sizes.buttonSmall.width;
       const btnH = sizes.buttonSmall.height;
       const confirmWidth = 120;
-      const gap = 8;
+      const gap = sizes.spacing;
       const totalWidth = btnW + gap + confirmWidth + gap + btnW;
 
-      this.betText.x = controlsCentreX;
-      this.betText.y = this.title.y + this.title.height + 8;
+      this.betText.x = centerX;
+      this.betText.y = ySize + (2 * sizes.spacing);
+      ySize += this.betText.height + (2 * sizes.spacing);
 
       this.decreaseBtn.x = 0;
       this.confirmBtn.x = btnW + gap;
       this.increaseBtn.x = btnW + gap + confirmWidth + gap;
-      this.buttonsContainer.x = controlsCentreX - totalWidth / 2;
-      this.buttonsContainer.y = this.betText.y + this.betText.height + 8;
+      this.buttonsContainer.x = centerX - totalWidth / 2;
+      this.buttonsContainer.y = ySize + sizes.spacing;
+      ySize += this.buttonsContainer.height + sizes.spacing;
 
-      this.warningText.x = controlsCentreX;
-      this.warningText.y = this.buttonsContainer.y + btnH + 8;
+
+      this.warningText.x = centerX;
+      this.warningText.y = ySize + sizes.spacing;
+      ySize += this.warningText.height + sizes.spacing;
     } else {
-      this.waitingText.x = controlsCentreX;
-      this.waitingText.y = height / 2;
+      this.waitingText.x = centerX;
+      this.waitingText.y = ySize + 4 * sizes.spacing;
+      ySize += this.waitingText.height + 4 * sizes.spacing;
     }
+
+    this.bg.clear();
+    this.bg.roundRect(0, 0, width, Math.max(ySize, 200), 15);
+    this.bg.fill(0x1a1a2e);
+    this.bg.stroke({ width: 3, color: this.isMyTurn ? 0x4caf50 : 0x666666 });
   }
 
   private changeBet(delta: number): void {
@@ -167,7 +173,7 @@ export class BettingControls extends Container {
   private updateWarning(): void {
     this.warningText.text = this.validBets.includes(this.currentBet)
       ? ''
-      : `Invalid! Valid: ${this.validBets.join(', ')}`;
+      : `Bet value is invalid`;
   }
 
   private confirm(): void {

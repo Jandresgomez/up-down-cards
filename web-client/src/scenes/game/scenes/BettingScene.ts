@@ -75,27 +75,26 @@ export class BettingScene extends Container {
     const sizes = getResponsiveSizes();
     const cardDims = getCardDimensions();
     const sp = sizes.spacing;
-    const halfSp = Math.floor(sp / 2);
+    const pad = Math.floor(sp / 2);
 
     this.bg.clear();
     this.bg.rect(0, 0, sizes.width, sizes.height).fill(0x1a1a2e);
 
-    let y = halfSp;
+    let y = pad;
 
     this.roundTitle.x = sp;
     this.roundTitle.y = y;
-    y += this.roundTitle.height + halfSp;
+    y += this.roundTitle.height + pad;
 
     this.playerIndicators.x = 0;
     this.playerIndicators.y = y;
-    y += this.playerIndicators.height + halfSp;
+    y += this.playerIndicators.height + pad;
 
     const panelWidth = sizes.width - sp * 2;
-    const panelHeight = Math.max(120, cardDims.height * 2);
     this.bettingControls.x = sp;
     this.bettingControls.y = y;
-    this.bettingControls.layout(panelWidth, panelHeight);
-    y += panelHeight + halfSp;
+    this.bettingControls.layout(panelWidth);
+    y += this.bettingControls.height + pad;
 
     // Hand cards — 2-row layout
     const cardSpacing = cardDims.width + cardDims.margin;
