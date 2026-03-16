@@ -1,6 +1,7 @@
 export interface ResponsiveSizes {
   width: number;
   height: number;
+  padding: number;
   isMobile: boolean;
   titleSize: number;
   subtitleSize: number;
@@ -15,6 +16,9 @@ export interface ResponsiveSizes {
   smallSpacing: number;
 }
 
+const MOBILE_PADDING = 8;
+const DESKTOP_PADDING = 16;
+
 export function getResponsiveSizes(): ResponsiveSizes {
   const width = window.innerWidth;
   const height = window.innerHeight;
@@ -23,11 +27,12 @@ export function getResponsiveSizes(): ResponsiveSizes {
   return {
     width,
     height,
+    padding: isMobile ? MOBILE_PADDING : DESKTOP_PADDING,
     isMobile,
-    titleSize: isMobile ? 32 : 48,
-    subtitleSize: isMobile ? 20 : 28,
-    fontSize: isMobile ? 18 : 24,
-    smallFontSize: isMobile ? 14 : 18,
+    titleSize: isMobile ? 32 : 40,
+    subtitleSize: isMobile ? 24 : 28,
+    fontSize: isMobile ? 20 : 24,
+    smallFontSize: isMobile ? 18 : 20,
     buttonSmall: {
       width: isMobile ? 50 : 60,
       height: isMobile ? 50 : 60,
@@ -42,7 +47,7 @@ export function getResponsiveSizes(): ResponsiveSizes {
     },
     inputWidth: Math.min(300, width * 0.8),
     inputHeight: isMobile ? 45 : 50,
-    spacing: isMobile ? 25 : 40,
+    spacing: isMobile ? MOBILE_PADDING * 2 : DESKTOP_PADDING * 2,
     smallSpacing: isMobile ? 15 : 20,
   };
 }
@@ -55,35 +60,22 @@ export const vmin = (percent: number) => (Math.min(window.innerWidth, window.inn
 // Mobile detection
 export const isMobile = () => window.innerWidth < 768;
 
-// Responsive card dimensions
+// Responsive card dimensions — height is 10% of viewport height so 2 rows fit per area
 export const getCardDimensions = () => {
   const mobile = isMobile();
+  const cardHeight = Math.floor(window.innerHeight * 0.08);
+  const cardWidth = Math.floor(cardHeight * 0.80);
   return {
-    width: mobile ? 60 : 80,
-    height: mobile ? 84 : 112,
-    fontSize: mobile ? 16 : 20,
-    margin: mobile ? 4 : 8,
+    width: cardWidth,
+    height: cardHeight,
+    margin: mobile ? 4 : 5,
   };
 };
 
-// Layout helper (legacy support for GameScreen)
-export const LAYOUT = {
-  getHeaderArea: () => ({
-    x: 0,
-    y: 0,
-    width: window.innerWidth,
-    height: vh(10),
-  }),
-  getBoardArea: () => ({
-    x: 0,
-    y: vh(10),
-    width: window.innerWidth,
-    height: isMobile() ? vh(55) : vh(60), // More space for hand on mobile
-  }),
-  getHandArea: () => ({
-    x: 0,
-    y: isMobile() ? vh(65) : vh(70),
-    width: window.innerWidth,
-    height: isMobile() ? vh(35) : vh(30), // Larger hand area on mobile
-  }),
+// Mesa card dimensions — wider than normal cards to fit rank+suit side by side, slightly shorter than normal cards
+export const getMesaCardDimensions = () => {
+  const normalCard = getCardDimensions();
+  const height = Math.floor(normalCard.width * 0.80); // slightly shorter than a normal card
+  const width = Math.floor(normalCard.height * 1);              // wider than tall, fits rank+suit side by side
+  return { width, height };
 };

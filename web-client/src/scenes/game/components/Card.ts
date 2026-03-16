@@ -6,51 +6,90 @@ export class Card extends Container {
   private bg: Graphics;
   private cardWidth: number;
   private cardHeight: number;
-  private isClickable: boolean = false;
   private stars: Graphics | null = null;
 
-  constructor(card: CardType, width: number = 80, height: number = 120) {
+  /**
+   * @param compact - Mesa mode
+   */
+  constructor(card: CardType, width: number = 80, height: number = 120, compact = false) {
     super();
     this.card = card;
     this.cardWidth = width;
     this.cardHeight = height;
 
-    // Background
     this.bg = new Graphics();
-    this.bg.roundRect(0, 0, this.cardWidth, this.cardHeight, 8);
+    this.bg.roundRect(0, 0, width, height, 6);
     this.bg.fill(0xffffff);
     this.bg.stroke({ width: 2, color: 0x333333 });
     this.addChild(this.bg);
 
-    // Rank
-    const rankText = new Text({
-      text: card.rank,
-      style: { fontSize: 24, fill: SUIT_COLORS[card.suit], fontWeight: 'bold' }
-    });
-    rankText.x = 10;
-    rankText.y = 10;
-    this.addChild(rankText);
+    if (compact) {
+      // Mesa Label, top right
+      const mesaFontSize = Math.floor(height * 0.3);
+      const mesaLabel = new Text({
+        text: 'Mesa',
+        style: { fontSize: mesaFontSize, fill: 0x000000, fontWeight: 'bold' },
+      });
+      mesaLabel.anchor.set(0, 0);
+      mesaLabel.x = Math.floor(width * 0.04);
+      mesaLabel.y = Math.floor(height * 0.04);
+      this.addChild(mesaLabel);
 
-    // Suit
-    const suitText = new Text({
-      text: SUIT_SYMBOLS[card.suit],
-      style: { fontSize: 32, fill: SUIT_COLORS[card.suit] }
-    });
-    suitText.anchor.set(0.5);
-    suitText.x = width / 2;
-    suitText.y = height / 2;
-    this.addChild(suitText);
+      // rank + suit side by side, bottom left
+      const rankFontSize = Math.floor(height * 0.6);
+      const suitFontSize = Math.floor(height);
+      const row2Y = Math.floor(height * 0.50);
+
+      const suitText = new Text({
+        text: SUIT_SYMBOLS[card.suit],
+        style: { fontSize: suitFontSize, fill: SUIT_COLORS[card.suit], fontWeight: 'bold' },
+      });
+      suitText.anchor.set(1, 1);
+      suitText.x = Math.floor(width * 0.94);
+      suitText.y = Math.floor(height * 1.1);
+      this.addChild(suitText);
+
+      const rankText = new Text({
+        text: card.rank,
+        style: { fontSize: rankFontSize, fill: SUIT_COLORS[card.suit], fontWeight: 'bold' },
+      });
+      rankText.anchor.set(1, 1);
+      rankText.x = Math.floor(width * 0.94) - suitText.width;
+      rankText.y = height;
+      this.addChild(rankText);
+    } else {
+      // Rank top-left, suit bottom-right — fonts proportional to card height
+      const rankFontSize = Math.floor(height * 0.33);
+      const suitFontSize = Math.floor(height * 0.44);
+
+      const rankText = new Text({
+        text: card.rank,
+        style: { fontSize: rankFontSize, fill: SUIT_COLORS[card.suit], fontWeight: 'bold' },
+      });
+      rankText.anchor.set(0, 0);
+      rankText.x = Math.floor(width * 0.08);
+      rankText.y = Math.floor(height * 0.05);
+      this.addChild(rankText);
+
+      const suitText = new Text({
+        text: SUIT_SYMBOLS[card.suit],
+        style: { fontSize: suitFontSize, fill: SUIT_COLORS[card.suit] },
+      });
+      suitText.anchor.set(1, 1);
+      suitText.x = width - Math.floor(width * 0.08);
+      suitText.y = height - Math.floor(height * 0.04);
+      this.addChild(suitText);
+    }
   }
 
   setClickable(clickable: boolean): void {
-    this.isClickable = clickable;
     this.eventMode = clickable ? 'static' : 'auto';
     this.cursor = clickable ? 'pointer' : 'default';
   }
 
   setHighlight(highlight: boolean): void {
     this.bg.clear();
-    this.bg.roundRect(0, 0, this.cardWidth, this.cardHeight, 8);
+    this.bg.roundRect(0, 0, this.cardWidth, this.cardHeight, 6);
     this.bg.fill(0xffffff);
     this.bg.stroke({
       width: highlight ? 4 : 2,
@@ -60,45 +99,35 @@ export class Card extends Container {
 
   setWinnerCard(): void {
     this.bg.clear();
-    this.bg.roundRect(0, 0, this.cardWidth, this.cardHeight, 8);
+    this.bg.roundRect(0, 0, this.cardWidth, this.cardHeight, 6);
     this.bg.fill(0xffffff);
-    this.bg.stroke({
-      width: 4,
-      color: 0xffd700,
-    });
+    this.bg.stroke({ width: 4, color: 0xffd700 });
 
-    // Add stars if not already present
     if (!this.stars) {
       this.stars = new Graphics();
       this.addChild(this.stars);
     }
 
     this.stars.clear();
-    
-    // Draw stars at corners and mid-points
+
     const positions = [
-      { x: 10, y: 10 },                           // Top-left
-      { x: this.cardWidth / 2, y: 5 },            // Top-center
-      { x: this.cardWidth - 10, y: 10 },          // Top-right
-      { x: this.cardWidth - 5, y: this.cardHeight / 2 }, // Right-center
-      { x: this.cardWidth - 10, y: this.cardHeight - 10 }, // Bottom-right
-      { x: this.cardWidth / 2, y: this.cardHeight - 5 },   // Bottom-center
-      { x: 10, y: this.cardHeight - 10 },         // Bottom-left
-      { x: 5, y: this.cardHeight / 2 }            // Left-center
+      { x: this.cardWidth * 0.15, y: this.cardHeight * 0.10 },
+      { x: this.cardWidth / 2, y: this.cardHeight * 0.04 },
+      { x: this.cardWidth * 0.85, y: this.cardHeight * 0.10 },
+      { x: this.cardWidth * 0.96, y: this.cardHeight / 2 },
+      { x: this.cardWidth * 0.85, y: this.cardHeight * 0.90 },
+      { x: this.cardWidth / 2, y: this.cardHeight * 0.96 },
+      { x: this.cardWidth * 0.15, y: this.cardHeight * 0.90 },
+      { x: this.cardWidth * 0.04, y: this.cardHeight / 2 },
     ];
 
     positions.forEach(pos => {
-      this.drawStar(this.stars!, pos.x, pos.y, 5, 8, 4);
+      this.stars!.star(pos.x, pos.y, 5, 8, 4, 0);
+      this.stars!.fill(0xffd700);
     });
   }
 
   getCard(): CardType {
     return this.card;
-  }
-
-  private drawStar(graphics: Graphics, cx: number, cy: number, spikes: number, outerRadius: number, innerRadius: number): void {
-    const step = Math.PI / spikes;
-    graphics.star(cx, cy, spikes, outerRadius, innerRadius, 0);
-    graphics.fill(0xffd700);
   }
 }

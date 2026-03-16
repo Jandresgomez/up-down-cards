@@ -8,7 +8,7 @@ const router = Router();
 
 router.post('/createRoom', async (req: Request, res: Response) => {
   try {
-    const { playerId, numberOfRounds = 5, name = '', shorthand = '' } = req.body;
+    const { playerId, numberOfRounds = 5, name = '' } = req.body;
 
     if (!playerId) {
       return res.status(400).json({ error: 'Player ID is required' });
@@ -45,7 +45,6 @@ router.post('/createRoom', async (req: Request, res: Response) => {
     await db.collection('players').doc(playerId).set({
       id: playerId,
       name,
-      shorthand,
       roomId,
       joinedAt: Date.now()
     });
@@ -58,7 +57,7 @@ router.post('/createRoom', async (req: Request, res: Response) => {
 
 router.post('/joinRoom', async (req: Request, res: Response) => {
   try {
-    const { roomId, playerId, name = '', shorthand = '' } = req.body;
+    const { roomId, playerId, name = '' } = req.body;
 
     if (!roomId || typeof roomId !== 'string') {
       return res.status(400).json({ error: 'Room ID is required' });
@@ -108,7 +107,6 @@ router.post('/joinRoom', async (req: Request, res: Response) => {
       transaction.set(db.collection('players').doc(playerId), {
         id: playerId,
         name,
-        shorthand,
         roomId,
         joinedAt: Date.now()
       });
@@ -336,11 +334,11 @@ router.post('/getPlayers', async (req: Request, res: Response) => {
       playerIds.map((id: string) => db.collection('players').doc(id).get())
     );
 
-    const players: Record<string, { name: string; shorthand: string }> = {};
+    const players: Record<string, { name: string }> = {};
     playerDocs.forEach(doc => {
       if (doc.exists) {
         const data = doc.data()!;
-        players[doc.id] = { name: data.name || '', shorthand: data.shorthand || '' };
+        players[doc.id] = { name: data.name || '' };
       }
     });
 

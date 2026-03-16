@@ -12,7 +12,7 @@ export class BettingPhase {
     this.container = container;
   }
 
-  render(gameState: GameState, myPlayerId: string, playerNames: Record<string, { name: string; shorthand: string }> = {}): void {
+  render(gameState: GameState, myPlayerId: string, playerNames: Record<string, { name: string }> = {}): void {
     // Clear existing UI
     this.clear();
 

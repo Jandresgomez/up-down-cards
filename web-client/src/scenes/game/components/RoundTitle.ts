@@ -1,12 +1,12 @@
 import { Text } from 'pixi.js';
 import { GameState } from '../../../types/game-types';
-import { isMobile } from '../../../utils/responsive';
+import { getResponsiveSizes, isMobile } from '../../../utils/responsive';
 
 export class RoundTitle extends Text {
     constructor() {
         super({
             text: '',
-            style: { fontSize: isMobile() ? 16 : 20, fill: 0xffffff, fontWeight: 'bold' }
+            style: { fontSize: getResponsiveSizes().titleSize, fill: 0xffffff, fontWeight: 'bold' }
         });
     }
 
@@ -16,7 +16,7 @@ export class RoundTitle extends Text {
             return;
         }
         const round = gameState.currentRound;
-        const direction = round.roundIndex < gameState.roundSequence.length / 2 ? 'Going Up' : 'Going Down';
-        this.text = `Round ${round.roundNumber} of ${gameState.numberOfRounds} (${direction})`;
+        const direction = round.roundIndex < gameState.roundSequence.length / 2 ? '⬆️' : '⬇️';
+        this.text = `Round ${round.roundNumber} of ${gameState.numberOfRounds} ${direction}`;
     }
 }

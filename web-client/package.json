@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "vite --mode development --host --port 3000",
     "build": "vite build --mode production",
-    "release": "npm run build && firebase deploy --only hosting",
-    "preview": "vite preview"
+    "preview": "vite build --mode preview && firebase hosting:channel:deploy preview",
+    "release": "npm run build && firebase deploy --only hosting"
   },
   "keywords": [],
   "author": "",

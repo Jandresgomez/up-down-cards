@@ -43,24 +43,6 @@ export function setPlayerName(name: string): void {
   localStorage.setItem('playerName', name);
 }
 
-export function getPlayerShorthand(): string | null {
-  return localStorage.getItem('playerShorthand');
-}
-
-export function setPlayerShorthand(shorthand: string): void {
-  localStorage.setItem('playerShorthand', shorthand);
-}
-
 export function clearPlayerProfile(): void {
   localStorage.removeItem('playerName');
-  localStorage.removeItem('playerShorthand');
-}
-
-export function generateShorthand(name: string): string {
-  const trimmed = name.replace(/\s/g, '');
-  if (trimmed.length === 0) return '';
-  if (trimmed.length === 1) return (trimmed[0] + trimmed[0] + trimmed[0]).toUpperCase();
-  if (trimmed.length === 2) return (trimmed[0] + trimmed[0] + trimmed[1]).toUpperCase();
-  const mid = Math.floor(trimmed.length / 2);
-  return (trimmed[0] + trimmed[mid] + trimmed[trimmed.length - 1]).toUpperCase();
 }

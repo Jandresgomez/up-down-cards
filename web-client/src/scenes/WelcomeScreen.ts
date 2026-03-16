@@ -1,11 +1,7 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { Input } from '@pixi/ui';
 import { getResponsiveSizes } from '../utils/responsive';
-import {
-  getPlayerName, getPlayerShorthand,
-  setPlayerName, setPlayerShorthand,
-  clearPlayerProfile, generateShorthand
-} from '../utils/playerId';
+import { getPlayerName, setPlayerName, clearPlayerProfile } from '../utils/playerId';
 
 type Stage = 'profile' | 'lobby';
 
@@ -22,7 +18,6 @@ export class WelcomeScreen {
   // Profile stage elements
   private profileContainer!: Container;
   private nameInput!: Input;
-  private shorthandInput!: Input;
   private startBtn!: Container;
 
   // Lobby stage elements
@@ -36,12 +31,15 @@ export class WelcomeScreen {
   private pasteDomBtn!: HTMLButtonElement;
   private joinBtn!: Container;
 
-  constructor(onJoinRoom: (roomNumber: string) => void, onCreateRoom: () => void) {
+  private prefillRoomId: string | null = null;
+  private nameInputPollTimer: ReturnType<typeof setInterval> | null = null;
+
+  constructor(onJoinRoom: (roomNumber: string) => void, onCreateRoom: () => void, prefillRoomId?: string) {
     this.container = new Container();
     this.onJoinRoom = onJoinRoom;
     this.onCreateRoom = onCreateRoom;
+    this.prefillRoomId = prefillRoomId ?? null;
 
-    // Determine initial stage
     this.stage = getPlayerName() ? 'lobby' : 'profile';
 
     this.buildUI();
@@ -57,7 +55,6 @@ export class WelcomeScreen {
 
     const sizes = getResponsiveSizes();
 
-    // Title (always shown)
     this.title = new Text({
       text: 'Up Down Cards',
       style: { fontSize: sizes.titleSize, fill: 0xffffff, fontWeight: 'bold' }
@@ -65,7 +62,6 @@ export class WelcomeScreen {
     this.title.anchor.set(0.5);
     this.container.addChild(this.title);
 
-    // Error text (always shown)
     this.errorText = new Text({ text: '', style: { fontSize: 18, fill: 0xff4444 } });
     this.errorText.anchor.set(0.5);
 
@@ -73,6 +69,9 @@ export class WelcomeScreen {
       this.buildProfileStage(sizes);
     } else {
       this.buildLobbyStage(sizes);
+      if (this.prefillRoomId) {
+        this.roomInput.value = this.prefillRoomId;
+      }
     }
   }
 
@@ -82,24 +81,14 @@ export class WelcomeScreen {
     this.profileContainer = new Container();
 
     const prompt = new Text({
-      text: "What's your name? (max 20)",
+      text: "What's your name? (max 12)",
       style: { fontSize: sizes.fontSize, fill: 0xffffff }
     });
     prompt.anchor.set(0.5);
     this.profileContainer.addChild(prompt);
 
-    this.nameInput = this.createInput(sizes, 'Your name...', 20);
+    this.nameInput = this.createInput(sizes, 'Your name...', 12);
     this.profileContainer.addChild(this.nameInput);
-
-    const shortLabel = new Text({
-      text: 'Shorthand (3 letters):',
-      style: { fontSize: sizes.smallFontSize, fill: 0xcccccc }
-    });
-    shortLabel.anchor.set(0.5);
-    this.profileContainer.addChild(shortLabel);
-
-    this.shorthandInput = this.createInput(sizes, 'ABC', 3);
-    this.profileContainer.addChild(this.shorthandInput);
 
     this.startBtn = this.createButton('Start', sizes.buttonLarge.width, sizes.buttonLarge.height);
     this.startBtn.eventMode = 'static';
@@ -110,32 +99,6 @@ export class WelcomeScreen {
     this.profileContainer.addChild(this.errorText);
 
     this.container.addChild(this.profileContainer);
-
-    // Poll name input to auto-generate shorthand
-    this.pollNameInput();
-  }
-
-  private nameInputPollTimer: ReturnType<typeof setInterval> | null = null;
-  private lastAutoName = '';
-
-  private lastAutoShorthand = '';
-
-  private pollNameInput(): void {
-    this.nameInputPollTimer = setInterval(() => {
-      const raw = this.nameInput.value.replace(/\s/g, '');
-      if (raw !== this.lastAutoName) {
-        this.lastAutoName = raw;
-        if (raw.length > 0) {
-          const expected = generateShorthand(raw);
-          const current = this.shorthandInput.value;
-          // Update if user hasn't manually edited (still matches last auto value or empty)
-          if (!current || current === this.lastAutoShorthand) {
-            this.shorthandInput.value = expected;
-            this.lastAutoShorthand = expected;
-          }
-        }
-      }
-    }, 300);
   }
 
   private handleProfileSubmit(): void {
@@ -144,20 +107,11 @@ export class WelcomeScreen {
       this.showError('Please enter your name');
       return;
     }
-    if (name.length > 20) {
-      this.showError('Name must be 20 characters or less');
-      return;
-    }
-    let shorthand = this.shorthandInput.value.trim().replace(/\s/g, '');
-    if (!shorthand) {
-      shorthand = generateShorthand(name);
-    }
-    if (shorthand.length !== 3) {
-      this.showError('Shorthand must be exactly 3 characters');
+    if (name.length > 12) {
+      this.showError('Name must be 12 characters or less');
       return;
     }
     setPlayerName(name);
-    setPlayerShorthand(shorthand);
     this.clearError();
     if (this.nameInputPollTimer) clearInterval(this.nameInputPollTimer);
     this.stage = 'lobby';
@@ -170,18 +124,15 @@ export class WelcomeScreen {
   private buildLobbyStage(sizes: ReturnType<typeof getResponsiveSizes>): void {
     this.lobbyContainer = new Container();
 
-    // Player name display (top-right)
     const playerName = getPlayerName() || '';
-    const shorthand = getPlayerShorthand() || '';
     this.playerNameDisplay = new Text({
-      text: `${playerName} (${shorthand})`,
+      text: playerName,
       style: { fontSize: sizes.smallFontSize, fill: 0xcccccc }
     });
     this.playerNameDisplay.anchor.set(1, 0);
     this.lobbyContainer.addChild(this.playerNameDisplay);
 
-    // Edit button (pencil icon)
-    this.editBtn = this.createSmallIconButton('✏');
+    this.editBtn = this.createSmallIconButton('✏️');
     this.editBtn.eventMode = 'static';
     this.editBtn.cursor = 'pointer';
     this.editBtn.on('pointerdown', () => {
@@ -193,14 +144,12 @@ export class WelcomeScreen {
     });
     this.lobbyContainer.addChild(this.editBtn);
 
-    // Create Room Button
     this.createBtn = this.createButton('Create New Room', sizes.buttonLarge.width, sizes.buttonLarge.height);
     this.createBtn.eventMode = 'static';
     this.createBtn.cursor = 'pointer';
     this.createBtn.on('pointerdown', () => this.onCreateRoom());
     this.lobbyContainer.addChild(this.createBtn);
 
-    // Join Room Text
     this.joinText = new Text({
       text: 'Or enter room number:',
       style: { fontSize: sizes.fontSize, fill: 0xffffff }
@@ -208,8 +157,7 @@ export class WelcomeScreen {
     this.joinText.anchor.set(0.5);
     this.lobbyContainer.addChild(this.joinText);
 
-    // Room Input + paste
-    this.roomInput = this.createInput(sizes, 'Enter room ID...', 10, true);
+    this.roomInput = this.createInput(sizes, 'Enter room ID...', 10);
     this.lobbyContainer.addChild(this.roomInput);
     this.pasteBtnVisual = this.createPasteVisual();
     this.lobbyContainer.addChild(this.pasteBtnVisual);
@@ -217,7 +165,6 @@ export class WelcomeScreen {
 
     this.lobbyContainer.addChild(this.errorText);
 
-    // Join Button
     this.joinBtn = this.createButton('Join Room', sizes.buttonLarge.width, sizes.buttonLarge.height);
     this.joinBtn.eventMode = 'static';
     this.joinBtn.cursor = 'pointer';
@@ -247,28 +194,23 @@ export class WelcomeScreen {
 
   /* ───── Shared helpers ───── */
 
-  private createInput(sizes: ReturnType<typeof getResponsiveSizes>, placeholder: string, maxLen?: number, withPastePadding = false): Input {
-    const pasteBtnSize = sizes.inputHeight - 8;
+  private createInput(sizes: ReturnType<typeof getResponsiveSizes>, placeholder: string, maxLen?: number, width?: number): Input {
+    const inputWidth = width ?? sizes.inputWidth;
     return new Input({
       bg: new Graphics()
-        .roundRect(0, 0, sizes.inputWidth, sizes.inputHeight, 10)
+        .roundRect(0, 0, inputWidth, sizes.inputHeight, 10)
         .fill(0xffffff)
         .stroke({ width: 2, color: 0x2a9d8f }),
       textStyle: { fontSize: sizes.fontSize, fill: 0x000000 },
       placeholder,
-      padding: {
-        top: 12,
-        right: withPastePadding ? pasteBtnSize + 16 : 12,
-        bottom: 12,
-        left: 12
-      },
+      padding: { top: 12, right: 12, bottom: 12, left: 12 },
       ...(maxLen ? { maxLength: maxLen } : {})
     });
   }
 
   private createPasteVisual(): Container {
     const sizes = getResponsiveSizes();
-    const btnSize = sizes.inputHeight - 8;
+    const btnSize = sizes.inputHeight;
     const vis = new Container();
     const bg = new Graphics();
     bg.roundRect(0, 0, btnSize, btnSize, 6);
@@ -289,10 +231,10 @@ export class WelcomeScreen {
     const btn = document.createElement('button');
     btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:60%;height:60%"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>`;
     btn.style.cssText = `
-      position: fixed; border: none; background: #2a9d8f; border-radius: 6px;
+      position: fixed; border: 2px solid white; background: #2a9d8f; border-radius: 6px;
       cursor: pointer; display: flex; align-items: center; justify-content: center;
       padding: 0; z-index: 1000; touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
+      -webkit-tap-highlight-color: transparent; box-sizing: border-box;
     `;
     btn.addEventListener('pointerdown', (e) => {
       e.preventDefault();
@@ -383,7 +325,6 @@ export class WelcomeScreen {
     const centerX = sizes.width / 2;
     let currentY = sizes.height * 0.15;
 
-    // Title
     this.title.style.fontSize = sizes.titleSize;
     this.title.x = centerX;
     this.title.y = currentY;
@@ -410,37 +351,20 @@ export class WelcomeScreen {
     // name input (child 1) — recreate for sizing
     const oldName = this.nameInput.value;
     this.profileContainer.removeChild(this.nameInput);
-    this.nameInput = this.createInput(sizes, 'Your name...', 20);
+    this.nameInput = this.createInput(sizes, 'Your name...', 12);
     this.nameInput.value = oldName;
     this.profileContainer.addChildAt(this.nameInput, 1);
     this.nameInput.x = centerX - sizes.inputWidth / 2;
     this.nameInput.y = currentY;
     currentY += sizes.inputHeight + sizes.spacing;
 
-    // shorthand label (child 2)
-    const shortLabel = children[2] as Text;
-    shortLabel.style.fontSize = sizes.smallFontSize;
-    shortLabel.x = centerX;
-    shortLabel.y = currentY;
-    currentY += shortLabel.height + sizes.spacing * 0.3;
-
-    // shorthand input (child 3) — recreate for sizing
-    const oldShort = this.shorthandInput.value;
-    this.profileContainer.removeChild(this.shorthandInput);
-    this.shorthandInput = this.createInput(sizes, 'ABC', 3);
-    this.shorthandInput.value = oldShort;
-    this.profileContainer.addChildAt(this.shorthandInput, 3);
-    this.shorthandInput.x = centerX - sizes.inputWidth / 2;
-    this.shorthandInput.y = currentY;
-    currentY += sizes.inputHeight + sizes.spacing;
-
-    // start button (child 4)
+    // start button (child 2)
     this.startBtn.x = centerX - sizes.buttonLarge.width / 2;
     this.startBtn.y = currentY;
     this.updateButtonSize(this.startBtn, sizes.buttonLarge.width, sizes.buttonLarge.height, sizes.fontSize);
     currentY += sizes.buttonLarge.height + sizes.spacing * 0.5;
 
-    // error text (child 5)
+    // error text (child 3)
     this.errorText.x = centerX;
     this.errorText.y = currentY;
   }
@@ -461,7 +385,7 @@ export class WelcomeScreen {
     this.createBtn.x = centerX - sizes.buttonLarge.width / 2;
     this.createBtn.y = currentY;
     this.updateButtonSize(this.createBtn, sizes.buttonLarge.width, sizes.buttonLarge.height, sizes.fontSize);
-    currentY += sizes.buttonLarge.height + sizes.spacing;
+    currentY += sizes.buttonLarge.height + sizes.spacing * 4;
 
     // Join text
     this.joinText.style.fontSize = sizes.fontSize;
@@ -469,36 +393,31 @@ export class WelcomeScreen {
     this.joinText.y = currentY;
     currentY += this.joinText.height + sizes.spacing * 0.5;
 
-    // Room input — recreate for sizing
+    // Room input — narrower to leave room for paste button
+    const pasteBtnSize = sizes.inputHeight;
+    const inputOnlyWidth = sizes.inputWidth - pasteBtnSize - sizes.padding;
     const oldValue = this.roomInput.value;
     const roomIdx = this.lobbyContainer.getChildIndex(this.roomInput);
     this.lobbyContainer.removeChild(this.roomInput);
-    this.roomInput = this.createInput(sizes, 'Enter room ID...', 10, true);
+    this.roomInput = this.createInput(sizes, 'Enter room ID...', 10, inputOnlyWidth);
     this.roomInput.value = oldValue;
     this.lobbyContainer.addChildAt(this.roomInput, roomIdx);
     this.roomInput.x = centerX - sizes.inputWidth / 2;
     this.roomInput.y = currentY;
 
-    // Paste visual
-    const pasteBtnSize = sizes.inputHeight - 8;
+    // Paste visual — outside input, to the right
     const pasteIdx = this.lobbyContainer.getChildIndex(this.pasteBtnVisual);
     this.lobbyContainer.removeChild(this.pasteBtnVisual);
     this.pasteBtnVisual = this.createPasteVisual();
     this.lobbyContainer.addChildAt(this.pasteBtnVisual, pasteIdx);
-    this.pasteBtnVisual.x = centerX + sizes.inputWidth / 2 - pasteBtnSize - 4;
-    this.pasteBtnVisual.y = currentY + 4;
+    this.pasteBtnVisual.x = centerX - sizes.inputWidth / 2 + inputOnlyWidth + sizes.padding;
+    this.pasteBtnVisual.y = currentY;
 
     // Sync DOM paste button
-    const canvas = document.querySelector('canvas');
-    if (canvas) {
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = rect.width / sizes.width;
-      const scaleY = rect.height / sizes.height;
-      this.pasteDomBtn.style.left = `${rect.left + this.pasteBtnVisual.x * scaleX}px`;
-      this.pasteDomBtn.style.top = `${rect.top + this.pasteBtnVisual.y * scaleY}px`;
-      this.pasteDomBtn.style.width = `${pasteBtnSize * scaleX}px`;
-      this.pasteDomBtn.style.height = `${pasteBtnSize * scaleY}px`;
-    }
+    this.pasteDomBtn.style.left = `${this.pasteBtnVisual.x}px`;
+    this.pasteDomBtn.style.top = `${this.pasteBtnVisual.y}px`;
+    this.pasteDomBtn.style.width = `${pasteBtnSize}px`;
+    this.pasteDomBtn.style.height = `${pasteBtnSize}px`;
 
     currentY += sizes.inputHeight + sizes.spacing * 0.8;
 

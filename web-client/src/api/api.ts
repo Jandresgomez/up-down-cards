@@ -1,4 +1,4 @@
-import { getPlayerId, getPlayerName, getPlayerShorthand } from '../utils/playerId';
+import { getPlayerId, getPlayerName } from '../utils/playerId';
 import { Card } from '../types/game-types';
 
 // API Base URL - defaults to localhost in dev, uses env variable in production
@@ -53,7 +53,7 @@ export interface CloseRoomResponse {
 
 export interface GetPlayersResponse {
   success: boolean;
-  players: Record<string, { name: string; shorthand: string }>;
+  players: Record<string, { name: string }>;
   error?: string;
 }
 
@@ -78,8 +78,7 @@ async function apiCall<T>(endpoint: string, data: any): Promise<T> {
 export async function createNewRoom(numberOfRounds: number = 5): Promise<CreateRoomResponse> {
   const playerId = getPlayerId();
   const name = getPlayerName() || '';
-  const shorthand = getPlayerShorthand() || '';
-  return apiCall<CreateRoomResponse>('/createRoom', { playerId, numberOfRounds, name, shorthand });
+  return apiCall<CreateRoomResponse>('/createRoom', { playerId, numberOfRounds, name });
 }
 
 export async function joinRoom(roomId: string): Promise<JoinRoomResponse> {
@@ -92,8 +91,7 @@ export async function joinRoom(roomId: string): Promise<JoinRoomResponse> {
 
   const playerId = getPlayerId();
   const name = getPlayerName() || '';
-  const shorthand = getPlayerShorthand() || '';
-  return apiCall<JoinRoomResponse>('/joinRoom', { roomId, playerId, name, shorthand });
+  return apiCall<JoinRoomResponse>('/joinRoom', { roomId, playerId, name });
 }
 
 export async function updateRoomSettings(roomId: string, settings: { numberOfRounds?: number; maxPlayers?: number }): Promise<UpdateRoomSettingsResponse> {

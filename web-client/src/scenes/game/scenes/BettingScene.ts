@@ -1,27 +1,21 @@
-import { Container, Graphics, Text } from 'pixi.js';
-import { GameState, SUIT_SYMBOLS, SUIT_COLORS } from '../../../types/game-types';
-import { getResponsiveSizes, isMobile, getCardDimensions } from '../../../utils/responsive';
+import { Container, Graphics } from 'pixi.js';
+import { GameState } from '../../../types/game-types';
+import { getResponsiveSizes, getCardDimensions } from '../../../utils/responsive';
 import { Card } from '../components/Card';
-import { Button } from '../components/Button';
 import { GamePlayerIndicators } from '../components/GamePlayerIndicators';
 import { RoundTitle } from '../components/RoundTitle';
+import { BettingControls } from '../components/BettingControls';
 import { getMyHand } from '../../../utils/gameHelpers';
 
 export class BettingScene extends Container {
-  private gameState: GameState;
-  private myPlayerId: string;
-  private playerNames: Record<string, { name: string; shorthand: string }>;
-  private validBets: number[];
-  private maxBet: number;
-  private isMyTurn: boolean;
-  private onConfirm: (bet: number) => void;
-
-  private currentBet: number = 0;
-  private betText: Text;
-  private warningText: Text;
-  private bettingPanel: Container;
-  private playerIndicators: GamePlayerIndicators;
+  private bg: Graphics;
   private roundTitle: RoundTitle;
+  private playerIndicators: GamePlayerIndicators;
+  private bettingControls: BettingControls;
+  private handContainer: Container;
+  private handCards: Card[] = [];
+
+  private resizeHandler: () => void;
 
   constructor(
     gameState: GameState,
@@ -30,306 +24,103 @@ export class BettingScene extends Container {
     maxBet: number,
     isMyTurn: boolean,
     onConfirm: (bet: number) => void,
-    playerNames: Record<string, { name: string; shorthand: string }> = {}
+    playerNames: Record<string, { name: string }> = {}
   ) {
     super();
-    this.gameState = gameState;
-    this.myPlayerId = myPlayerId;
-    this.playerNames = playerNames;
-    this.validBets = validBets;
-    this.maxBet = maxBet;
-    this.isMyTurn = isMyTurn;
-    this.onConfirm = onConfirm;
 
-    this.bettingPanel = new Container();
-    this.betText = new Text({ text: '0', style: { fontSize: 48, fill: 0x4caf50, fontWeight: 'bold' } });
-    this.warningText = new Text({ text: '', style: { fontSize: 16, fill: 0xff6b6b } });
-    this.playerIndicators = new GamePlayerIndicators('betting');
+    this.bg = new Graphics();
     this.roundTitle = new RoundTitle();
+    this.playerIndicators = new GamePlayerIndicators('betting');
+    this.bettingControls = new BettingControls(
+      isMyTurn,
+      validBets,
+      maxBet,
+      gameState.currentRound?.mesa ?? null,
+      onConfirm
+    );
+    this.handContainer = new Container();
 
-    this.createUI();
-    this.resize();
+    this.roundTitle.updateFromState(gameState);
+    this.playerIndicators.update(gameState, playerNames);
+    this.buildHand(gameState, myPlayerId);
 
-    window.addEventListener('resize', () => this.resize());
+    this.buildChildren();
+    this.layout();
+
+    this.resizeHandler = () => this.layout();
+    window.addEventListener('resize', this.resizeHandler);
   }
 
-  private createUI(): void {
-    const sizes = getResponsiveSizes();
-
-    // Background
-    const bg = new Graphics();
-    bg.rect(0, 0, sizes.width, sizes.height);
-    bg.fill(0x1a1a2e);
-    this.addChild(bg);
-
-    let currentY = sizes.spacing;
-
-    // Round title at top
-    this.roundTitle.updateFromState(this.gameState);
-    this.roundTitle.x = sizes.spacing;
-    this.roundTitle.y = currentY;
+  private buildChildren(): void {
+    this.addChild(this.bg);
     this.addChild(this.roundTitle);
-    currentY += 30;
-
-    // Player indicators at top (4xN grid, centered)
-    const topHeight = sizes.height * 0.25;
-    this.playerIndicators.update(this.gameState, this.myPlayerId, this.playerNames);
-    this.playerIndicators.y = currentY;
     this.addChild(this.playerIndicators);
-    currentY += topHeight + sizes.spacing;
-
-    // Betting controls (center) with mesa inside
-    const betPanelHeight = sizes.isMobile ? 180 : 200;
-    this.renderBettingControls();
-    this.bettingPanel.x = sizes.width / 2;
-    this.bettingPanel.y = currentY + betPanelHeight / 2;
-    currentY += betPanelHeight + sizes.spacing;
-
-    // Hand (bottom)
-    this.renderHand(currentY);
+    this.addChild(this.bettingControls);
+    this.addChild(this.handContainer);
   }
 
-  private renderMesaCard(startY: number, areaHeight: number): void {
-    if (!this.gameState.currentRound?.mesa) return;
+  private buildHand(gameState: GameState, myPlayerId: string): void {
+    const myHand = getMyHand(gameState, myPlayerId);
+    if (!myHand) return;
 
-    const mesa = this.gameState.currentRound.mesa;
-    const sizes = getResponsiveSizes();
-    const mobile = isMobile();
-    const cardWidth = mobile ? 50 : 60;
-    const cardHeight = mobile ? 44 : 54;
-
-    const mesaContainer = new Container();
-
-    const bg = new Graphics();
-    bg.roundRect(0, 0, cardWidth, cardHeight, 8);
-    bg.fill(0xffffff);
-    bg.stroke({ width: 2, color: 0x333333 });
-    mesaContainer.addChild(bg);
-
-    const label = new Text({
-      text: 'Mesa',
-      style: { fontSize: mobile ? 12 : 14, fill: 0x666666, fontWeight: 'bold' }
+    const cardDims = getCardDimensions();
+    this.handCards = myHand.map(card => {
+      const c = new Card(card, cardDims.width, cardDims.height);
+      this.handContainer.addChild(c);
+      return c;
     });
-    label.x = 6;
-    label.y = 6;
-    mesaContainer.addChild(label);
-
-    const cardText = new Text({
-      text: `${mesa.rank}${SUIT_SYMBOLS[mesa.suit]}`,
-      style: { fontSize: mobile ? 20 : 24, fill: SUIT_COLORS[mesa.suit], fontWeight: 'bold' }
-    });
-    cardText.x = 6;
-    cardText.y = mobile ? 20 : 24;
-    mesaContainer.addChild(cardText);
-
-    // Position on left side
-    mesaContainer.x = sizes.spacing;
-    mesaContainer.y = startY + (areaHeight - cardHeight) / 2;
-    this.addChild(mesaContainer);
   }
 
-
-  private renderHand(startY: number): void {
-    const myHand = getMyHand(this.gameState, this.myPlayerId);
-    if (!myHand || myHand.length === 0) return;
-
+  private layout(): void {
     const sizes = getResponsiveSizes();
     const cardDims = getCardDimensions();
+    const sp = sizes.spacing;
+    const halfSp = Math.floor(sp / 2);
+
+    this.bg.clear();
+    this.bg.rect(0, 0, sizes.width, sizes.height).fill(0x1a1a2e);
+
+    let y = halfSp;
+
+    this.roundTitle.x = sp;
+    this.roundTitle.y = y;
+    y += this.roundTitle.height + halfSp;
+
+    this.playerIndicators.x = 0;
+    this.playerIndicators.y = y;
+    y += this.playerIndicators.height + halfSp;
+
+    const panelWidth = sizes.width - sp * 2;
+    const panelHeight = Math.max(120, cardDims.height * 2);
+    this.bettingControls.x = sp;
+    this.bettingControls.y = y;
+    this.bettingControls.layout(panelWidth, panelHeight);
+    y += panelHeight + halfSp;
+
+    // Hand cards — 2-row layout
     const cardSpacing = cardDims.width + cardDims.margin;
-    const startX = (sizes.width - (myHand.length * cardSpacing)) / 2;
+    const lineSize = Math.max(1, Math.floor(sizes.width / cardSpacing));
+    const numRows = Math.ceil(this.handCards.length / lineSize);
 
-    myHand.forEach((card, index) => {
-      const cardComponent = new Card(card, cardDims.width, cardDims.height);
-      cardComponent.x = startX + index * cardSpacing;
-      cardComponent.y = startY;
-      this.addChild(cardComponent);
-    });
-  }
+    this.handContainer.x = 0;
+    this.handContainer.y = y;
 
-  private renderBettingControls(): void {
-    const sizes = getResponsiveSizes();
-    const panelWidth = Math.min(300, sizes.width * 0.8);
-    const panelHeight = sizes.isMobile ? 180 : 200;
+    for (let row = 0; row < numRows; row++) {
+      const rowStart = row * lineSize;
+      const rowEnd = Math.min(rowStart + lineSize, this.handCards.length);
+      const cardsInRow = rowEnd - rowStart;
+      const rowWidth = cardsInRow * cardSpacing - cardDims.margin;
+      const startX = (sizes.width - rowWidth) / 2;
 
-    // Background
-    const bg = new Graphics();
-    bg.roundRect(0, 0, panelWidth, panelHeight, 15);
-    bg.fill(0x1a1a2e);
-    bg.stroke({ width: 3, color: this.isMyTurn ? 0x4caf50 : 0x666666 });
-    this.bettingPanel.addChild(bg);
-
-    // Mesa card (top-left corner of panel)
-    this.renderMesaInPanel(panelWidth);
-
-    // Title
-    const title = new Text({
-      text: this.isMyTurn ? 'Your Bet' : 'Waiting...',
-      style: { fontSize: sizes.fontSize, fill: 0xffffff, fontWeight: 'bold' }
-    });
-    title.anchor.set(0.5);
-    title.x = panelWidth / 2;
-    title.y = sizes.spacing * 0.8;
-    this.bettingPanel.addChild(title);
-
-    if (!this.isMyTurn) {
-      // Show waiting message
-      const waitingText = new Text({
-        text: 'Others are betting,\nplease wait for your turn!',
-        style: { fontSize: sizes.smallFontSize, fill: 0xaaaaaa, align: 'center' }
-      });
-      waitingText.anchor.set(0.5);
-      waitingText.x = panelWidth / 2;
-      waitingText.y = panelHeight / 2;
-      this.bettingPanel.addChild(waitingText);
-    } else {
-      // Show betting controls
-      // Bet display
-      this.betText.anchor.set(0.5);
-      this.betText.x = panelWidth / 2;
-      this.betText.y = sizes.isMobile ? 70 : 80;
-      this.bettingPanel.addChild(this.betText);
-
-      // Buttons
-      const btnY = sizes.isMobile ? 110 : 120;
-      const btnSize = sizes.buttonSmall.width;
-      const confirmWidth = 120;
-      const spacing = 10;
-      const totalWidth = btnSize + spacing + confirmWidth + spacing + btnSize;
-      const startX = (panelWidth - totalWidth) / 2;
-
-      const decreaseBtn = new Button('-', btnSize, btnSize);
-      decreaseBtn.x = startX;
-      decreaseBtn.y = btnY;
-      decreaseBtn.on('pointerdown', () => this.changeBet(-1));
-      this.bettingPanel.addChild(decreaseBtn);
-
-      const confirmBtn = new Button('Confirm', confirmWidth, sizes.buttonSmall.height, 0x4caf50);
-      confirmBtn.x = startX + btnSize + spacing;
-      confirmBtn.y = btnY;
-      confirmBtn.on('pointerdown', () => this.confirm());
-      this.bettingPanel.addChild(confirmBtn);
-
-      const increaseBtn = new Button('+', btnSize, btnSize);
-      increaseBtn.x = startX + btnSize + spacing + confirmWidth + spacing;
-      increaseBtn.y = btnY;
-      increaseBtn.on('pointerdown', () => this.changeBet(1));
-      this.bettingPanel.addChild(increaseBtn);
-
-      // Warning text
-      this.warningText.anchor.set(0.5);
-      this.warningText.x = panelWidth / 2;
-      this.warningText.y = btnY + sizes.buttonSmall.height + 15;
-      this.bettingPanel.addChild(this.warningText);
-
-      this.updateWarning();
-    }
-
-    // Position panel
-    this.bettingPanel.pivot.set(panelWidth / 2, panelHeight / 2);
-    this.addChild(this.bettingPanel);
-  }
-
-  private renderMesaInPanel(panelWidth: number): void {
-    if (!this.gameState.currentRound?.mesa) return;
-
-    const mesa = this.gameState.currentRound.mesa;
-    const mobile = isMobile();
-    const cardWidth = mobile ? 50 : 65;
-    const cardHeight = mobile ? 44 : 58;
-
-    const mesaContainer = new Container();
-
-    const bg = new Graphics();
-    bg.roundRect(0, 0, cardWidth, cardHeight, 6);
-    bg.fill(0xffffff);
-    bg.stroke({ width: 2, color: 0x333333 });
-    mesaContainer.addChild(bg);
-
-    const label = new Text({
-      text: 'Mesa',
-      style: { fontSize: mobile ? 11 : 14, fill: 0x666666, fontWeight: 'bold' }
-    });
-    label.x = 5;
-    label.y = 5;
-    mesaContainer.addChild(label);
-
-    const cardText = new Text({
-      text: `${mesa.rank}${SUIT_SYMBOLS[mesa.suit]}`,
-      style: { fontSize: mobile ? 20 : 26, fill: SUIT_COLORS[mesa.suit], fontWeight: 'bold' }
-    });
-    cardText.x = 5;
-    cardText.y = mobile ? 20 : 26;
-    mesaContainer.addChild(cardText);
-
-    // Position at top-left of panel
-    mesaContainer.x = 10;
-    mesaContainer.y = 10;
-    this.bettingPanel.addChild(mesaContainer);
-  }
-
-  private resize(): void {
-    const sizes = getResponsiveSizes();
-
-    // Recalculate layout positions
-    let currentY = sizes.spacing;
-
-    // Top section height
-    const topHeight = sizes.height * 0.25;
-    currentY += topHeight + sizes.spacing;
-
-    // Betting panel position
-    const betPanelHeight = sizes.isMobile ? 180 : 200;
-    this.bettingPanel.x = sizes.width / 2;
-    this.bettingPanel.y = currentY + betPanelHeight / 2;
-  }
-
-  private changeBet(delta: number): void {
-    const newBet = this.currentBet + delta;
-
-    if (newBet < 0) {
-      this.currentBet = this.maxBet;
-    } else if (newBet > this.maxBet) {
-      this.currentBet = 0;
-    } else {
-      this.currentBet = newBet;
-    }
-
-    this.betText.text = `${this.currentBet}`;
-    this.updateWarning();
-  }
-
-  private updateWarning(): void {
-    if (!this.validBets.includes(this.currentBet)) {
-      this.warningText.text = `Invalid! Valid: ${this.validBets.join(', ')}`;
-    } else {
-      this.warningText.text = '';
-    }
-  }
-
-  private confirm(): void {
-    if (this.validBets.includes(this.currentBet)) {
-      this.onConfirm(this.currentBet);
-    } else {
-      this.shake();
-    }
-  }
-
-  private shake(): void {
-    const originalRotation = this.bettingPanel.rotation;
-    const shakeAngle = (5 * Math.PI) / 180;
-    const shakeDuration = 50;
-    const shakes = 3;
-
-    let currentShake = 0;
-    const shakeInterval = setInterval(() => {
-      if (currentShake >= shakes * 2) {
-        this.bettingPanel.rotation = originalRotation;
-        clearInterval(shakeInterval);
-        return;
+      for (let col = 0; col < cardsInRow; col++) {
+        this.handCards[rowStart + col].x = startX + col * cardSpacing;
+        this.handCards[rowStart + col].y = row * (cardDims.height + cardDims.margin);
       }
+    }
+  }
 
-      this.bettingPanel.rotation = originalRotation + (currentShake % 2 === 0 ? shakeAngle : -shakeAngle);
-      currentShake++;
-    }, shakeDuration);
+  override destroy(options?: Parameters<Container['destroy']>[0]): void {
+    window.removeEventListener('resize', this.resizeHandler);
+    super.destroy(options);
   }
 }

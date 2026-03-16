@@ -3,7 +3,7 @@ import { GameState } from '../../../types/game-types';
 import { isMobile } from '../../../utils/responsive';
 
 export class GameCompleteOverlay extends Container {
-  constructor(gameState: GameState, playerNames: Record<string, { name: string; shorthand: string }> = {}) {
+  constructor(gameState: GameState, playerNames: Record<string, { name: string }> = {}) {
     super();
 
     const screenWidth = window.innerWidth;
@@ -47,7 +47,7 @@ export class GameCompleteOverlay extends Container {
       const rank = index + 1;
       const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
       const profile = playerNames[player.id];
-      const label = profile?.name || profile?.shorthand || `P${gameState.players.findIndex(p => p.id === player.id) + 1}`;
+      const label = profile?.name || `P${gameState.players.findIndex(p => p.id === player.id) + 1}`;
 
       const rankText = new Text({
         text: `${medal} ${label}: ${player.totalScore} pts`,

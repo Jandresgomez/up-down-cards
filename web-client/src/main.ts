@@ -1,4 +1,4 @@
-import { Application } from 'pixi.js';
+import { Application, TextStyle } from 'pixi.js';
 import { WelcomeScreen } from './scenes/WelcomeScreen';
 import { WaitingRoomScreen } from './scenes/WaitingRoomScreen';
 import { GameScreen } from './scenes/GameScreen';
@@ -8,12 +8,13 @@ import { subscribeToGameState } from './api/gameStateListener';
 import { getPlayerId, getCurrentRoomId, setCurrentRoomId, clearCurrentRoomId } from './utils/playerId';
 import { GameState } from './types/game-types';
 import { Unsubscribe } from 'firebase/firestore';
+import { getMockGameState, MOCK_MY_PLAYER_ID, MOCK_PLAYER_NAMES } from './utils/mockData';
+import { MockPickerScreen } from './scenes/MockPickerScreen';
 
 const app = new Application();
 
-let currentScreen: WelcomeScreen | WaitingRoomScreen | GameScreen | ReconnectScreen | null = null;
+let currentScreen: WelcomeScreen | WaitingRoomScreen | GameScreen | ReconnectScreen | MockPickerScreen | null = null;
 let gameStateUnsubscribe: Unsubscribe | null = null;
-let currentRoomId: string | null = null;
 let isAdmin: boolean = false;
 
 // Initialize player ID on load
@@ -21,6 +22,8 @@ const playerId = getPlayerId();
 console.log('Player ID:', playerId);
 
 async function initApp() {
+  TextStyle.defaultTextStyle.resolution = window.devicePixelRatio || 1;
+
   await app.init({
     resizeTo: window,
     backgroundColor: 0x1a1a2e,
@@ -30,14 +33,41 @@ async function initApp() {
 
   document.body.appendChild(app.canvas);
 
+  // Mock mode: /mock (picker) or /mock?phase=betting&scenario=1
+  if (window.location.pathname === '/mock') {
+    const params = new URLSearchParams(window.location.search);
+    const phase = params.get('phase');
+    const scenarioId = parseInt(params.get('scenario') ?? '1', 10);
+    if (phase === 'betting' || phase === 'playing') {
+      const status = phase === 'betting' ? 'betting' : 'playing_hand';
+      const mockState = getMockGameState(status, scenarioId);
+      const gameScreen = new GameScreen('mock-room', MOCK_MY_PLAYER_ID, MOCK_PLAYER_NAMES);
+      gameScreen.updateGameState(mockState);
+      app.stage.addChild(gameScreen.getContainer());
+      currentScreen = gameScreen;
+    } else {
+      const pickerScreen = new MockPickerScreen();
+      app.stage.addChild(pickerScreen.getContainer());
+      currentScreen = pickerScreen;
+    }
+    return;
+  }
+
+  // Check for /join?roomId=xxx share link
+  const urlParams = new URLSearchParams(window.location.search);
+  const joinRoomId = window.location.pathname === '/join' ? urlParams.get('roomId') ?? undefined : undefined;
+  if (joinRoomId) {
+    // Clean up the URL without reloading
+    window.history.replaceState({}, '', '/');
+  }
+
   // Check for existing room on load
   const savedRoomId = getCurrentRoomId();
   if (savedRoomId) {
     console.log('Found saved room:', savedRoomId);
     showReconnectScreen(savedRoomId);
   } else {
-    // Start with welcome screen
-    showWelcomeScreen();
+    showWelcomeScreen(joinRoomId);
   }
 }
 
@@ -63,7 +93,7 @@ function handleGameStateUpdate(gameState: GameState): void {
       currentScreen.updatePlayers(gameState.players.length);
       currentScreen.updateSettings(gameState.numberOfRounds, gameState.maxPlayers, gameState.players.length);
     }
-  } else if (gameState.status !== 'waiting') {
+  } else {
     // Game has started or is in progress
     if (!(currentScreen instanceof GameScreen)) {
       showGameScreen(gameState);
@@ -84,7 +114,7 @@ function subscribeToRoom(roomId: string): void {
   );
 }
 
-function showWelcomeScreen(): void {
+function showWelcomeScreen(prefillRoomId?: string): void {
   if (currentScreen) {
     currentScreen.destroy();
   }
@@ -103,8 +133,7 @@ function showWelcomeScreen(): void {
         return;
       }
 
-      currentRoomId = roomNumber;
-      setCurrentRoomId(roomNumber); // Save to localStorage
+      setCurrentRoomId(roomNumber);
 
       // Subscribe to game state updates
       gameStateUnsubscribe = subscribeToGameState(
@@ -119,8 +148,7 @@ function showWelcomeScreen(): void {
     async () => {
       const response = await createNewRoom();
       if (response.success) {
-        currentRoomId = response.roomId;
-        setCurrentRoomId(response.roomId); // Save to localStorage
+        setCurrentRoomId(response.roomId);
 
         // Subscribe to game state updates
         gameStateUnsubscribe = subscribeToGameState(
@@ -131,7 +159,8 @@ function showWelcomeScreen(): void {
           }
         );
       }
-    }
+    },
+    prefillRoomId
   );
 
   app.stage.addChild(welcomeScreen.getContainer());
@@ -231,7 +260,6 @@ function showReconnectScreen(roomId: string): void {
       // Reconnect
       const response = await joinRoom(roomId);
       if (response.success) {
-        currentRoomId = roomId;
         subscribeToRoom(roomId);
       } else {
         console.log('Failed to rejoin room:', response.error);

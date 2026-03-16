@@ -12,7 +12,6 @@ export interface Room {
 export interface Player {
   id: string;
   name: string;
-  shorthand: string;
   joinedAt: number;
   isAdmin: boolean;
 }
