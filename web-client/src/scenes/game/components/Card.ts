@@ -86,24 +86,38 @@ export class Card extends Container {
     this.cursor = clickable ? 'pointer' : 'default';
   }
 
-  setHighlight(highlight: boolean): void {
+  setHighlight(highlight: 'none' | 'highlight' | 'red'): void {
+    const width = highlight === 'none' ? 2 : 4;
+    const color = (() => {
+      switch (highlight) {
+        case 'none':
+          return 0x333333;
+        case 'highlight':
+          return 0x11ABD6;
+        case 'red':
+          return 0xff0000;
+      }
+    })();
+
     this.bg.clear();
     this.bg.roundRect(0, 0, this.cardWidth, this.cardHeight, 6);
     this.bg.fill(0xffffff);
     this.bg.stroke({
-      width: highlight ? 4 : 2,
-      color: highlight ? 0x11ABD6 : 0x333333
+      width,
+      color
     });
   }
 
   shake(): void {
-    const original = this.rotation;
+    const original = 0;
     const angle = (5 * Math.PI) / 180;
+    this.setHighlight('red');
     let step = 0;
     const interval = setInterval(() => {
       if (step >= 6) {
-        this.rotation = original;
+        this.rotation = 0;
         clearInterval(interval);
+        this.setHighlight('none');
         return;
       }
       this.rotation = original + (step % 2 === 0 ? angle : -angle);

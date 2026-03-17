@@ -3,7 +3,7 @@ import { GameState } from '../../../types/game-types';
 import { getResponsiveSizes, getCardDimensions, getMesaCardDimensions } from '../../../utils/responsive';
 import { GamePlayerIndicators } from '../components/GamePlayerIndicators';
 import { RoundTitle } from '../components/RoundTitle';
-import { PlayerHand } from '../components/PlayerHand';
+import { PlayerHand } from '../components/player-hand/PlayerHand';
 import { TableCards } from '../components/TableCards';
 import { HandCompletePanel } from '../components/HandCompletePanel';
 import { Card } from '../components/Card';
@@ -14,7 +14,6 @@ export class PlayingScene extends Container {
   private tableBackground: Graphics;
   private mesaContainer: Container;
   private mesaCardComponent: Card | null = null;
-  private statusText: Text;
   private roundTitle: RoundTitle;
   private playerIndicators: GamePlayerIndicators;
   private tableCards: TableCards;
@@ -51,14 +50,6 @@ export class PlayingScene extends Container {
       this.mesaContainer.addChild(this.mesaCardComponent);
     }
 
-    // Status message shown to the right of the mesa card
-    const sizes = getResponsiveSizes();
-    const myTurnNow = !isHandComplete && isMyTurn(gameState, myPlayerId);
-    this.statusText = new Text({
-      text: myTurnNow ? 'Your turn!' : '',
-      style: { fontSize: sizes.fontSize, fill: myTurnNow ? 0x4caf50 : 0xaaaaaa, fontWeight: 'bold' },
-    });
-
     if (!isHandComplete) {
       this.playerHand = new PlayerHand(gameState, myPlayerId);
     } else if (lastHand) {
@@ -90,7 +81,6 @@ export class PlayingScene extends Container {
     this.addChild(this.roundTitle);
     this.addChild(this.playerIndicators);
     this.addChild(this.mesaContainer);
-    this.addChild(this.statusText);
     this.addChild(this.tableCards);
     if (this.playerHand) this.addChild(this.playerHand);
     if (this.handCompletePanel) this.addChild(this.handCompletePanel);
@@ -123,10 +113,6 @@ export class PlayingScene extends Container {
 
     this.mesaContainer.x = sp;
     this.mesaContainer.y = tableAreaTop;
-
-    // Status text vertically centred alongside the mesa card
-    this.statusText.x = sp + mesaDims.width + sp;
-    this.statusText.y = tableAreaTop + Math.floor((mesaDims.height - this.statusText.height) / 2);
 
     // Played cards start below the mesa card row
     const tableCardsTop = tableAreaTop + mesaDims.height + pad;

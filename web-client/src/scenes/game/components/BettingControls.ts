@@ -46,10 +46,19 @@ export class BettingControls extends Container {
     this.mesaContainer = new Container();
     this.buildMesa(mesa);
 
-    this.title = new Text({
-      text: isMyTurn ? 'Its your turn to bet!' : 'Waiting...',
-      style: { fontSize: sizes.fontSize, fill: 0xffffff, fontWeight: 'bold' },
-    });
+    this.title = (() => {
+      if (isMyTurn) {
+        return new Text({
+          text: 'Its your turn to bet!',
+          style: { fontSize: sizes.fontSize, fill: 0xffff00, fontWeight: 'bold' },
+        });
+      }
+
+      return new Text({
+        text: 'Waiting...',
+        style: { fontSize: sizes.fontSize, fill: 0xffffff, fontWeight: 'bold' },
+      });
+    })();
     this.title.anchor.set(0.5, 0);
 
     this.betText = new Text({
@@ -115,7 +124,6 @@ export class BettingControls extends Container {
 
     let ySize = sizes.padding;
 
-    const mesaDims = getMesaCardDimensions();
     this.mesaContainer.x = sizes.padding;
     this.mesaContainer.y = sizes.padding; // fixed pos
 
@@ -185,12 +193,12 @@ export class BettingControls extends Container {
   }
 
   private shake(): void {
-    const original = this.rotation;
-    const angle = (5 * Math.PI) / 180;
+    const original = 0;
+    const angle = (1 * Math.PI) / 180;
     let step = 0;
     const interval = setInterval(() => {
       if (step >= 6) {
-        this.rotation = original;
+        this.rotation = 0;
         clearInterval(interval);
         return;
       }

@@ -22,7 +22,7 @@ const playerId = getPlayerId();
 console.log('Player ID:', playerId);
 
 async function initApp() {
-  TextStyle.defaultTextStyle.resolution = window.devicePixelRatio || 1;
+  (TextStyle.defaultTextStyle as any).resolution = window.devicePixelRatio || 1;
 
   await app.init({
     resizeTo: window,

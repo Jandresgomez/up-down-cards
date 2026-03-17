@@ -8,7 +8,7 @@ export function subscribeToGameState(
   onError?: (error: Error) => void
 ): Unsubscribe {
   const gameRef = doc(db, 'games', roomId);
-  
+
   return onSnapshot(
     gameRef,
     (snapshot) => {
