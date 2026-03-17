@@ -1,11 +1,12 @@
 import { Container, Graphics } from 'pixi.js';
+import { BG_SCENE } from '../../../utils/colors';
 import { GameState } from '../../../types/game-types';
 import { getResponsiveSizes, getCardDimensions } from '../../../utils/responsive';
-import { Card } from '../components/Card';
-import { GamePlayerIndicators } from '../components/GamePlayerIndicators';
 import { RoundTitle } from '../components/RoundTitle';
 import { BettingControls } from '../components/BettingControls';
 import { getMyHand } from '../../../utils/gameHelpers';
+import { GamePlayerIndicators } from '../components/game-player-indicators/GamePlayerIndicators';
+import { Card } from '../components/Card';
 
 export class BettingScene extends Container {
   private bg: Graphics;
@@ -78,7 +79,7 @@ export class BettingScene extends Container {
     const pad = Math.floor(sp / 2);
 
     this.bg.clear();
-    this.bg.rect(0, 0, sizes.width, sizes.height).fill(0x1a1a2e);
+    this.bg.rect(0, 0, sizes.width, sizes.height).fill(BG_SCENE);
 
     let y = pad;
 

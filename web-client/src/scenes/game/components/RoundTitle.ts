@@ -1,12 +1,13 @@
 import { Text } from 'pixi.js';
 import { GameState } from '../../../types/game-types';
 import { getResponsiveSizes, isMobile } from '../../../utils/responsive';
+import { TEXT_PRIMARY } from '../../../utils/colors';
 
 export class RoundTitle extends Text {
     constructor() {
         super({
             text: '',
-            style: { fontSize: getResponsiveSizes().titleSize, fill: 0xffffff, fontWeight: 'bold' }
+            style: { fontSize: getResponsiveSizes().titleSize, fill: TEXT_PRIMARY, fontWeight: 'bold' }
         });
     }
 

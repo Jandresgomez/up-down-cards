@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { Card as CardType, SUIT_SYMBOLS, SUIT_COLORS } from '../../../types/game-types';
+import { CARD_BG, CARD_BORDER, CARD_HIGHLIGHT, CARD_ERROR, CARD_WINNER, TEXT_DARK } from '../../../utils/colors';
 
 export class Card extends Container {
   private card: CardType;
@@ -19,8 +20,8 @@ export class Card extends Container {
 
     this.bg = new Graphics();
     this.bg.roundRect(0, 0, width, height, 6);
-    this.bg.fill(0xffffff);
-    this.bg.stroke({ width: 2, color: 0x333333 });
+    this.bg.fill(CARD_BG);
+    this.bg.stroke({ width: 2, color: CARD_BORDER });
     this.addChild(this.bg);
 
     if (compact) {
@@ -28,7 +29,7 @@ export class Card extends Container {
       const mesaFontSize = Math.floor(height * 0.3);
       const mesaLabel = new Text({
         text: 'Mesa',
-        style: { fontSize: mesaFontSize, fill: 0x000000, fontWeight: 'bold' },
+        style: { fontSize: mesaFontSize, fill: TEXT_DARK, fontWeight: 'bold' },
       });
       mesaLabel.anchor.set(0, 0);
       mesaLabel.x = Math.floor(width * 0.04);
@@ -91,17 +92,17 @@ export class Card extends Container {
     const color = (() => {
       switch (highlight) {
         case 'none':
-          return 0x333333;
+          return CARD_BORDER;
         case 'highlight':
-          return 0x11ABD6;
+          return CARD_HIGHLIGHT;
         case 'red':
-          return 0xff0000;
+          return CARD_ERROR;
       }
     })();
 
     this.bg.clear();
     this.bg.roundRect(0, 0, this.cardWidth, this.cardHeight, 6);
-    this.bg.fill(0xffffff);
+    this.bg.fill(CARD_BG);
     this.bg.stroke({
       width,
       color
@@ -128,8 +129,8 @@ export class Card extends Container {
   setWinnerCard(): void {
     this.bg.clear();
     this.bg.roundRect(0, 0, this.cardWidth, this.cardHeight, 6);
-    this.bg.fill(0xffffff);
-    this.bg.stroke({ width: 4, color: 0xffd700 });
+    this.bg.fill(CARD_BG);
+    this.bg.stroke({ width: 4, color: CARD_WINNER });
 
     if (!this.stars) {
       this.stars = new Graphics();
@@ -151,7 +152,7 @@ export class Card extends Container {
 
     positions.forEach(pos => {
       this.stars!.star(pos.x, pos.y, 5, 8, 4, 0);
-      this.stars!.fill(0xffd700);
+      this.stars!.fill(CARD_WINNER);
     });
   }
 

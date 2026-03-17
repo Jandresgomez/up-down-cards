@@ -2,6 +2,7 @@ import { Container, Graphics, Text } from 'pixi.js';
 import { Input } from '@pixi/ui';
 import { getResponsiveSizes } from '../utils/responsive';
 import { getPlayerName, setPlayerName, clearPlayerProfile } from '../utils/playerId';
+import { TEAL, TEAL_CSS, TEXT_PRIMARY, TEXT_LIGHT, TEXT_DARK, ERROR_LIGHT, BG_ICON_BTN } from '../utils/colors';
 
 type Stage = 'profile' | 'lobby';
 
@@ -57,12 +58,12 @@ export class WelcomeScreen {
 
     this.title = new Text({
       text: 'Up Down Cards',
-      style: { fontSize: sizes.titleSize, fill: 0xffffff, fontWeight: 'bold' }
+      style: { fontSize: sizes.titleSize, fill: TEXT_PRIMARY, fontWeight: 'bold' }
     });
     this.title.anchor.set(0.5);
     this.container.addChild(this.title);
 
-    this.errorText = new Text({ text: '', style: { fontSize: 18, fill: 0xff4444 } });
+    this.errorText = new Text({ text: '', style: { fontSize: 18, fill: ERROR_LIGHT } });
     this.errorText.anchor.set(0.5);
 
     if (this.stage === 'profile') {
@@ -82,7 +83,7 @@ export class WelcomeScreen {
 
     const prompt = new Text({
       text: "What's your name? (max 12)",
-      style: { fontSize: sizes.fontSize, fill: 0xffffff }
+      style: { fontSize: sizes.fontSize, fill: TEXT_PRIMARY }
     });
     prompt.anchor.set(0.5);
     this.profileContainer.addChild(prompt);
@@ -127,7 +128,7 @@ export class WelcomeScreen {
     const playerName = getPlayerName() || '';
     this.playerNameDisplay = new Text({
       text: playerName,
-      style: { fontSize: sizes.smallFontSize, fill: 0xcccccc }
+      style: { fontSize: sizes.smallFontSize, fill: TEXT_LIGHT }
     });
     this.playerNameDisplay.anchor.set(1, 0);
     this.lobbyContainer.addChild(this.playerNameDisplay);
@@ -152,7 +153,7 @@ export class WelcomeScreen {
 
     this.joinText = new Text({
       text: 'Or enter room number:',
-      style: { fontSize: sizes.fontSize, fill: 0xffffff }
+      style: { fontSize: sizes.fontSize, fill: TEXT_PRIMARY }
     });
     this.joinText.anchor.set(0.5);
     this.lobbyContainer.addChild(this.joinText);
@@ -179,11 +180,11 @@ export class WelcomeScreen {
     const size = 30;
     const bg = new Graphics();
     bg.roundRect(0, 0, size, size, 6);
-    bg.fill(0x444466);
+    bg.fill(BG_ICON_BTN);
     btn.addChild(bg);
     const label = new Text({
       text: icon,
-      style: { fontSize: 16, fill: 0xffffff }
+      style: { fontSize: 16, fill: TEXT_PRIMARY }
     });
     label.anchor.set(0.5);
     label.x = size / 2;
@@ -199,9 +200,9 @@ export class WelcomeScreen {
     return new Input({
       bg: new Graphics()
         .roundRect(0, 0, inputWidth, sizes.inputHeight, 10)
-        .fill(0xffffff)
-        .stroke({ width: 2, color: 0x2a9d8f }),
-      textStyle: { fontSize: sizes.fontSize, fill: 0x000000 },
+        .fill(TEXT_PRIMARY)
+        .stroke({ width: 2, color: TEAL }),
+      textStyle: { fontSize: sizes.fontSize, fill: TEXT_DARK },
       placeholder,
       padding: { top: 12, right: 12, bottom: 12, left: 12 },
       ...(maxLen ? { maxLength: maxLen } : {})
@@ -214,14 +215,14 @@ export class WelcomeScreen {
     const vis = new Container();
     const bg = new Graphics();
     bg.roundRect(0, 0, btnSize, btnSize, 6);
-    bg.fill(0x2a9d8f);
+    bg.fill(TEAL);
     vis.addChild(bg);
     const icon = new Graphics();
     const s = btnSize;
     icon.roundRect(s * 0.25, s * 0.3, s * 0.5, s * 0.5, 2);
-    icon.stroke({ width: 2, color: 0xffffff });
+    icon.stroke({ width: 2, color: TEXT_PRIMARY });
     icon.roundRect(s * 0.35, s * 0.2, s * 0.3, s * 0.15, 2);
-    icon.stroke({ width: 2, color: 0xffffff });
+    icon.stroke({ width: 2, color: TEXT_PRIMARY });
     vis.addChild(icon);
     vis.eventMode = 'none';
     return vis;
@@ -231,7 +232,7 @@ export class WelcomeScreen {
     const btn = document.createElement('button');
     btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:60%;height:60%"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>`;
     btn.style.cssText = `
-      position: fixed; border: 2px solid white; background: #2a9d8f; border-radius: 6px;
+      position: fixed; border: 2px solid white; background: ${TEAL_CSS}; border-radius: 6px;
       cursor: pointer; display: flex; align-items: center; justify-content: center;
       padding: 0; z-index: 1000; touch-action: manipulation;
       -webkit-tap-highlight-color: transparent; box-sizing: border-box;
@@ -264,12 +265,12 @@ export class WelcomeScreen {
     const btn = new Container();
     const bg = new Graphics();
     bg.roundRect(0, 0, width, height, 10);
-    bg.fill(0x2a9d8f);
-    bg.stroke({ width: 2, color: 0xffffff });
+    bg.fill(TEAL);
+    bg.stroke({ width: 2, color: TEXT_PRIMARY });
     btn.addChild(bg);
     const label = new Text({
       text,
-      style: { fontSize: 24, fill: 0xffffff, fontWeight: 'bold' }
+      style: { fontSize: 24, fill: TEXT_PRIMARY, fontWeight: 'bold' }
     });
     label.anchor.set(0.5);
     label.x = width / 2;
@@ -283,8 +284,8 @@ export class WelcomeScreen {
     const text = btn.getChildAt(1) as Text;
     bg.clear();
     bg.roundRect(0, 0, width, height, 10);
-    bg.fill(0x2a9d8f);
-    bg.stroke({ width: 2, color: 0xffffff });
+    bg.fill(TEAL);
+    bg.stroke({ width: 2, color: TEXT_PRIMARY });
     text.style.fontSize = fontSize;
     text.x = width / 2;
     text.y = height / 2;

@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { getResponsiveSizes } from '../utils/responsive';
+import { TEAL, TEAL_CSS, SUCCESS_CSS, TEXT_PRIMARY, TEXT_SECONDARY } from '../utils/colors';
 
 const CLIPBOARD_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:60%;height:60%"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>`;
 const SHARE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:60%;height:60%"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`;
@@ -53,22 +54,22 @@ export class WaitingRoomScreen {
 
     this.roundsText = new Text({
       text: '',
-      style: { fontSize: 32, fill: 0xffffff, fontWeight: 'bold' }
+      style: { fontSize: 32, fill: TEXT_PRIMARY, fontWeight: 'bold' }
     });
 
     this.playersText = new Text({
       text: '',
-      style: { fontSize: 24, fill: 0xffffff }
+      style: { fontSize: 24, fill: TEXT_PRIMARY }
     });
 
     this.title = new Text({
       text: 'Waiting Room',
-      style: { fontSize: 48, fill: 0xffffff, fontWeight: 'bold' }
+      style: { fontSize: 48, fill: TEXT_PRIMARY, fontWeight: 'bold' }
     });
 
     this.roomText = new Text({
       text: `Room: ${roomId}`,
-      style: { fontSize: 28, fill: 0xaaaaaa }
+      style: { fontSize: 28, fill: TEXT_SECONDARY }
     });
 
     this.createUI(roomId);
@@ -116,7 +117,7 @@ export class WaitingRoomScreen {
     const vis = new Container();
     const bg = new Graphics();
     bg.roundRect(0, 0, btnSize, btnSize, 6);
-    bg.fill(0x2a9d8f);
+    bg.fill(TEAL);
     vis.addChild(bg);
     return vis;
   }
@@ -125,14 +126,14 @@ export class WaitingRoomScreen {
     const bg = vis.getChildAt(0) as Graphics;
     bg.clear();
     bg.roundRect(0, 0, btnSize, btnSize, 6);
-    bg.fill(0x2a9d8f);
+    bg.fill(TEAL);
   }
 
   private createDomButton(svg: string, handler: () => void): HTMLButtonElement {
     const btn = document.createElement('button');
     btn.innerHTML = svg;
     btn.style.cssText = `
-      position: fixed; border: 2px solid white; background: #2a9d8f; border-radius: 6px;
+      position: fixed; border: 2px solid white; background: ${TEAL_CSS}; border-radius: 6px;
       cursor: pointer; display: flex; align-items: center; justify-content: center;
       padding: 0; z-index: 1000; touch-action: manipulation;
       -webkit-tap-highlight-color: transparent; box-sizing: border-box;
@@ -149,8 +150,8 @@ export class WaitingRoomScreen {
   private async handleCopy(): Promise<void> {
     try {
       await navigator.clipboard.writeText(this.roomId);
-      this.copyDomBtn.style.background = '#27ae60';
-      setTimeout(() => { this.copyDomBtn.style.background = '#2a9d8f'; }, 1500);
+      this.copyDomBtn.style.background = SUCCESS_CSS;
+      setTimeout(() => { this.copyDomBtn.style.background = TEAL_CSS; }, 1500);
     } catch (err) {
       console.error('Failed to copy:', err);
     }
@@ -165,8 +166,8 @@ export class WaitingRoomScreen {
     } else {
       try {
         await navigator.clipboard.writeText(url);
-        this.shareDomBtn.style.background = '#27ae60';
-        setTimeout(() => { this.shareDomBtn.style.background = '#2a9d8f'; }, 1500);
+        this.shareDomBtn.style.background = SUCCESS_CSS;
+        setTimeout(() => { this.shareDomBtn.style.background = TEAL_CSS; }, 1500);
       } catch { /* ignore */ }
     }
   }
@@ -174,7 +175,7 @@ export class WaitingRoomScreen {
   private createNonAdminControls(): void {
     const waitingText = new Text({
       text: 'Waiting for admin to start the game...',
-      style: { fontSize: 24, fill: 0xaaaaaa }
+      style: { fontSize: 24, fill: TEXT_SECONDARY }
     });
     waitingText.anchor.set(0.5);
     this.container.addChild(waitingText);
@@ -323,8 +324,8 @@ export class WaitingRoomScreen {
 
     bg.clear();
     bg.roundRect(0, 0, width, height, 10);
-    bg.fill(0x2a9d8f);
-    bg.stroke({ width: 2, color: 0xffffff });
+    bg.fill(TEAL);
+    bg.stroke({ width: 2, color: TEXT_PRIMARY });
 
     text.style.fontSize = fontSize;
     text.x = width / 2;
@@ -334,7 +335,7 @@ export class WaitingRoomScreen {
   private createAdminControls(): void {
     const roundsLabel = new Text({
       text: 'Number of Rounds:',
-      style: { fontSize: 24, fill: 0xffffff }
+      style: { fontSize: 24, fill: TEXT_PRIMARY }
     });
     roundsLabel.anchor.set(0.5);
     this.container.addChild(roundsLabel);
@@ -360,7 +361,7 @@ export class WaitingRoomScreen {
 
     this.maxRoundsText = new Text({
       text: `(Max: ${this.maxRounds})`,
-      style: { fontSize: 18, fill: 0xaaaaaa }
+      style: { fontSize: 18, fill: TEXT_SECONDARY }
     });
     this.maxRoundsText.anchor.set(0.5);
     this.container.addChild(this.maxRoundsText);
@@ -386,13 +387,13 @@ export class WaitingRoomScreen {
 
     const bg = new Graphics();
     bg.roundRect(0, 0, width, height, 10);
-    bg.fill(0x2a9d8f);
-    bg.stroke({ width: 2, color: 0xffffff });
+    bg.fill(TEAL);
+    bg.stroke({ width: 2, color: TEXT_PRIMARY });
     btn.addChild(bg);
 
     const label = new Text({
       text,
-      style: { fontSize: 24, fill: 0xffffff, fontWeight: 'bold' }
+      style: { fontSize: 24, fill: TEXT_PRIMARY, fontWeight: 'bold' }
     });
     label.anchor.set(0.5);
     label.x = width / 2;

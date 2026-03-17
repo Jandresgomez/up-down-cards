@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { isMobile, vh, vw } from '../utils/responsive';
+import { SUCCESS, DISABLED, TEXT_PRIMARY, TEXT_SECONDARY } from '../utils/colors';
 
 export class ReconnectScreen {
   private container: Container;
@@ -20,7 +21,7 @@ export class ReconnectScreen {
     // Title
     const title = new Text({
       text: 'Previous Game Found',
-      style: { fontSize: mobile ? 32 : 48, fill: 0xffffff, fontWeight: 'bold' }
+      style: { fontSize: mobile ? 32 : 48, fill: TEXT_PRIMARY, fontWeight: 'bold' }
     });
     title.anchor.set(0.5);
     title.x = centerX;
@@ -30,7 +31,7 @@ export class ReconnectScreen {
     // Message
     const message = new Text({
       text: `You were in room: ${roomId}`,
-      style: { fontSize: mobile ? 20 : 28, fill: 0xaaaaaa }
+      style: { fontSize: mobile ? 20 : 28, fill: TEXT_SECONDARY }
     });
     message.anchor.set(0.5);
     message.x = centerX;
@@ -39,7 +40,7 @@ export class ReconnectScreen {
 
     const question = new Text({
       text: 'Would you like to reconnect?',
-      style: { fontSize: mobile ? 18 : 24, fill: 0xaaaaaa }
+      style: { fontSize: mobile ? 18 : 24, fill: TEXT_SECONDARY }
     });
     question.anchor.set(0.5);
     question.x = centerX;
@@ -53,26 +54,26 @@ export class ReconnectScreen {
 
     if (mobile) {
       // Stack buttons vertically on mobile
-      const reconnectBtn = this.createButton('Reconnect', centerX - btnWidth / 2, question.y + 60, 0x4caf50, btnWidth, btnHeight);
+      const reconnectBtn = this.createButton('Reconnect', centerX - btnWidth / 2, question.y + 60, SUCCESS, btnWidth, btnHeight);
       reconnectBtn.eventMode = 'static';
       reconnectBtn.cursor = 'pointer';
       reconnectBtn.on('pointerdown', onReconnect);
       this.container.addChild(reconnectBtn);
 
-      const menuBtn = this.createButton('Main Menu', centerX - btnWidth / 2, question.y + 130, 0x666666, btnWidth, btnHeight);
+      const menuBtn = this.createButton('Main Menu', centerX - btnWidth / 2, question.y + 130, DISABLED, btnWidth, btnHeight);
       menuBtn.eventMode = 'static';
       menuBtn.cursor = 'pointer';
       menuBtn.on('pointerdown', onMainMenu);
       this.container.addChild(menuBtn);
     } else {
       // Side by side on desktop
-      const reconnectBtn = this.createButton('Reconnect', centerX - btnWidth - btnSpacing / 2, question.y + 80, 0x4caf50, btnWidth, btnHeight);
+      const reconnectBtn = this.createButton('Reconnect', centerX - btnWidth - btnSpacing / 2, question.y + 80, SUCCESS, btnWidth, btnHeight);
       reconnectBtn.eventMode = 'static';
       reconnectBtn.cursor = 'pointer';
       reconnectBtn.on('pointerdown', onReconnect);
       this.container.addChild(reconnectBtn);
 
-      const menuBtn = this.createButton('Main Menu', centerX + btnSpacing / 2, question.y + 80, 0x666666, btnWidth, btnHeight);
+      const menuBtn = this.createButton('Main Menu', centerX + btnSpacing / 2, question.y + 80, DISABLED, btnWidth, btnHeight);
       menuBtn.eventMode = 'static';
       menuBtn.cursor = 'pointer';
       menuBtn.on('pointerdown', onMainMenu);
@@ -86,12 +87,12 @@ export class ReconnectScreen {
     const bg = new Graphics();
     bg.roundRect(0, 0, width, height, 10);
     bg.fill(color);
-    bg.stroke({ width: 2, color: 0xffffff });
+    bg.stroke({ width: 2, color: TEXT_PRIMARY });
     btn.addChild(bg);
 
     const label = new Text({
       text,
-      style: { fontSize: isMobile() ? 18 : 24, fill: 0xffffff, fontWeight: 'bold' }
+      style: { fontSize: isMobile() ? 18 : 24, fill: TEXT_PRIMARY, fontWeight: 'bold' }
     });
     label.anchor.set(0.5);
     label.x = width / 2;

@@ -1,21 +1,22 @@
 import { Container, Graphics, Text } from 'pixi.js';
+import { TEAL, TEXT_PRIMARY } from '../../../utils/colors';
 
 export class Button extends Container {
   private bg: Graphics;
   private labelText: Text;
 
-  constructor(text: string, width: number = 200, height: number = 60, color: number = 0x2a9d8f) {
+  constructor(text: string, width: number = 200, height: number = 60, color: number = TEAL) {
     super();
 
     this.bg = new Graphics();
     this.bg.roundRect(0, 0, width, height, 10);
     this.bg.fill(color);
-    this.bg.stroke({ width: 2, color: 0xffffff });
+    this.bg.stroke({ width: 2, color: TEXT_PRIMARY });
     this.addChild(this.bg);
 
     this.labelText = new Text({
       text,
-      style: { fontSize: 24, fill: 0xffffff, fontWeight: 'bold' }
+      style: { fontSize: 24, fill: TEXT_PRIMARY, fontWeight: 'bold' }
     });
     this.labelText.anchor.set(0.5);
     this.labelText.x = width / 2;
@@ -34,6 +35,6 @@ export class Button extends Container {
     this.bg.clear();
     this.bg.roundRect(0, 0, this.bg.width, this.bg.height, 10);
     this.bg.fill(color);
-    this.bg.stroke({ width: 2, color: 0xffffff });
+    this.bg.stroke({ width: 2, color: TEXT_PRIMARY });
   }
 }

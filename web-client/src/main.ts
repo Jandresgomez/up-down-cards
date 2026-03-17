@@ -1,4 +1,5 @@
 import { Application, TextStyle } from 'pixi.js';
+import { BG_SCENE } from './utils/colors';
 import { WelcomeScreen } from './scenes/WelcomeScreen';
 import { WaitingRoomScreen } from './scenes/WaitingRoomScreen';
 import { GameScreen } from './scenes/GameScreen';
@@ -26,7 +27,7 @@ async function initApp() {
 
   await app.init({
     resizeTo: window,
-    backgroundColor: 0x1a1a2e,
+    backgroundColor: BG_SCENE,
     resolution: window.devicePixelRatio || 1,
     autoDensity: true,
   });

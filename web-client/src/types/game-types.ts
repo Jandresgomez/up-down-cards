@@ -90,6 +90,8 @@ export interface GameState {
 }
 
 // Display helpers
+import { TEXT_DARK, ERROR } from '../utils/colors';
+
 export const SUIT_SYMBOLS: Record<Suit, string> = {
   spades: '♠',
   hearts: '♥',
@@ -98,8 +100,8 @@ export const SUIT_SYMBOLS: Record<Suit, string> = {
 };
 
 export const SUIT_COLORS: Record<Suit, number> = {
-  spades: 0x000000,
-  hearts: 0xff0000,
-  diamonds: 0xff0000,
-  clubs: 0x000000
+  spades: TEXT_DARK,
+  hearts: ERROR,
+  diamonds: ERROR,
+  clubs: TEXT_DARK
 };

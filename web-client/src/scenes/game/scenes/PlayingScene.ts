@@ -1,13 +1,13 @@
 import { Container, Graphics, Text } from 'pixi.js';
+import { BG_SCENE, BG_TABLE, TABLE_BORDER } from '../../../utils/colors';
 import { GameState } from '../../../types/game-types';
 import { getResponsiveSizes, getCardDimensions, getMesaCardDimensions } from '../../../utils/responsive';
-import { GamePlayerIndicators } from '../components/GamePlayerIndicators';
 import { RoundTitle } from '../components/RoundTitle';
 import { PlayerHand } from '../components/player-hand/PlayerHand';
 import { TableCards } from '../components/TableCards';
 import { HandCompletePanel } from '../components/HandCompletePanel';
 import { Card } from '../components/Card';
-import { isMyTurn } from '../../../utils/gameHelpers';
+import { GamePlayerIndicators } from '../components/game-player-indicators/GamePlayerIndicators';
 
 export class PlayingScene extends Container {
   private bg: Graphics;
@@ -93,7 +93,7 @@ export class PlayingScene extends Container {
     const pad = sizes.padding;
 
     this.bg.clear();
-    this.bg.rect(0, 0, sizes.width, sizes.height).fill(0x1a1a2e);
+    this.bg.rect(0, 0, sizes.width, sizes.height).fill(BG_SCENE);
 
     let y = pad;
 
@@ -129,8 +129,8 @@ export class PlayingScene extends Container {
       tableAreaBottom - tableAreaTop + sp,
       12
     );
-    this.tableBackground.fill(0x0f3d3e);
-    this.tableBackground.stroke({ width: 2, color: 0x2a9d8f });
+    this.tableBackground.fill(BG_TABLE);
+    this.tableBackground.stroke({ width: 2, color: TABLE_BORDER });
 
     y = tableAreaBottom + sp;
 

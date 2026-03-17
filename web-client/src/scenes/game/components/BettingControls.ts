@@ -3,6 +3,7 @@ import { Card as CardType } from '../../../types/game-types';
 import { getResponsiveSizes, getMesaCardDimensions } from '../../../utils/responsive';
 import { Button } from './Button';
 import { Card } from './Card';
+import { BG_SCENE, SUCCESS, DISABLED, WARNING, TEXT_PRIMARY, TEXT_SECONDARY, ERROR_SOFT } from '../../../utils/colors';
 
 export class BettingControls extends Container {
   private bg: Graphics;
@@ -50,39 +51,39 @@ export class BettingControls extends Container {
       if (isMyTurn) {
         return new Text({
           text: 'Its your turn to bet!',
-          style: { fontSize: sizes.fontSize, fill: 0xffff00, fontWeight: 'bold' },
+          style: { fontSize: sizes.fontSize, fill: WARNING, fontWeight: 'bold' },
         });
       }
 
       return new Text({
         text: 'Waiting...',
-        style: { fontSize: sizes.fontSize, fill: 0xffffff, fontWeight: 'bold' },
+        style: { fontSize: sizes.fontSize, fill: TEXT_PRIMARY, fontWeight: 'bold' },
       });
     })();
     this.title.anchor.set(0.5, 0);
 
     this.betText = new Text({
       text: '0',
-      style: { fontSize: sizes.titleSize, fill: 0xffffff, fontWeight: 'bold' },
+      style: { fontSize: sizes.titleSize, fill: TEXT_PRIMARY, fontWeight: 'bold' },
     });
     this.betText.anchor.set(0.5);
 
     this.warningText = new Text({
       text: '',
-      style: { fontSize: sizes.smallFontSize, fill: 0xff6b6b },
+      style: { fontSize: sizes.smallFontSize, fill: ERROR_SOFT },
     });
     this.warningText.anchor.set(0.5);
 
     this.waitingText = new Text({
       text: 'Others are betting,\nplease wait for your turn!',
-      style: { fontSize: sizes.smallFontSize, fill: 0xaaaaaa, align: 'center' },
+      style: { fontSize: sizes.smallFontSize, fill: TEXT_SECONDARY, align: 'center' },
     });
     this.waitingText.anchor.set(0.5);
 
     const btnW = sizes.buttonSmall.width;
     const btnH = sizes.buttonSmall.height;
     this.decreaseBtn = new Button('-', btnW, btnH);
-    this.confirmBtn = new Button('Confirm', 120, btnH, 0x4caf50);
+    this.confirmBtn = new Button('Confirm', 120, btnH, SUCCESS);
     this.increaseBtn = new Button('+', btnW, btnH);
     this.buttonsContainer = new Container();
 
@@ -165,8 +166,8 @@ export class BettingControls extends Container {
 
     this.bg.clear();
     this.bg.roundRect(0, 0, width, Math.max(ySize, 200), 15);
-    this.bg.fill(0x1a1a2e);
-    this.bg.stroke({ width: 3, color: this.isMyTurn ? 0x4caf50 : 0x666666 });
+    this.bg.fill(BG_SCENE);
+    this.bg.stroke({ width: 3, color: this.isMyTurn ? SUCCESS : DISABLED });
   }
 
   private changeBet(delta: number): void {

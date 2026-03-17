@@ -1,6 +1,7 @@
 import { Container, Text, TextStyle } from "pixi.js";
 import { getResponsiveSizes } from "../../../../utils/responsive";
 import { GameState } from "../../../../types/game-types";
+import { TEXT_PRIMARY, ERROR, WARNING } from "../../../../utils/colors";
 
 export type MessageContent = {
     text: string;
@@ -61,13 +62,13 @@ export class PlayerHandMessagePanel extends Container {
     private getMessageStyle(type: MessageContent['type']): Partial<TextStyle> {
         const sizes = getResponsiveSizes();
         if (type === 'info') {
-            return { fontSize: sizes.fontSize, fill: 0xffffff, fontWeight: 'bold' };
+            return { fontSize: sizes.fontSize, fill: TEXT_PRIMARY, fontWeight: 'bold' };
         } else if (type === 'error') {
-            return { fontSize: sizes.fontSize, fill: 0xff0000, fontWeight: 'bold' };
+            return { fontSize: sizes.fontSize, fill: ERROR, fontWeight: 'bold' };
         } else if (type === 'attention') {
-            return { fontSize: sizes.fontSize, fill: 0xffff00, fontWeight: 'bold' };
+            return { fontSize: sizes.fontSize, fill: WARNING, fontWeight: 'bold' };
         }
 
-        return { fontSize: sizes.fontSize, fill: 0xffffff, fontWeight: 'bold' };
+        return { fontSize: sizes.fontSize, fill: TEXT_PRIMARY, fontWeight: 'bold' };
     }
 }

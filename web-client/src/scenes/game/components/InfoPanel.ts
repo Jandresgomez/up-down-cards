@@ -1,5 +1,6 @@
 import { Container, Text } from 'pixi.js';
 import { GameState } from '../../../types/game-types';
+import { TEXT_PRIMARY, TEXT_SECONDARY } from '../../../utils/colors';
 
 export class InfoPanel extends Container {
   private roundText: Text;
@@ -10,7 +11,7 @@ export class InfoPanel extends Container {
 
     this.roundText = new Text({
       text: '',
-      style: { fontSize: 24, fill: 0xffffff, fontWeight: 'bold' }
+      style: { fontSize: 24, fill: TEXT_PRIMARY, fontWeight: 'bold' }
     });
     this.roundText.x = 20;
     this.roundText.y = 20;
@@ -18,7 +19,7 @@ export class InfoPanel extends Container {
 
     this.scoresText = new Text({
       text: '',
-      style: { fontSize: 18, fill: 0xaaaaaa }
+      style: { fontSize: 18, fill: TEXT_SECONDARY }
     });
     this.scoresText.anchor.set(1, 0);
     this.scoresText.y = 20;

@@ -1,4 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
+import { TEAL, TEAL_CSS, SUCCESS_CSS } from '../utils/colors';
 import { GameState } from '../types/game-types';
 import { getPlayerId } from '../utils/playerId';
 import { isMobile, vw, vh, getResponsiveSizes } from '../utils/responsive';
@@ -47,13 +48,13 @@ export class GameScreen {
     const vis = new Container();
     const bg = new Graphics();
     bg.roundRect(0, 0, size, size, 8);
-    bg.fill(0x2a9d8f);
+    bg.fill(TEAL);
     vis.addChild(bg);
 
     const domBtn = document.createElement('button');
     domBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:60%;height:60%"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`;
     domBtn.style.cssText = `
-      position: fixed; border: 2px solid white; background: #2a9d8f; border-radius: 8px;
+      position: fixed; border: 2px solid white; background: ${TEAL_CSS}; border-radius: 8px;
       cursor: pointer; display: flex; align-items: center; justify-content: center;
       padding: 0; z-index: 1000; touch-action: manipulation;
       -webkit-tap-highlight-color: transparent; box-sizing: border-box;
@@ -67,8 +68,8 @@ export class GameScreen {
       } else {
         try {
           await navigator.clipboard.writeText(url);
-          domBtn.style.background = '#27ae60';
-          setTimeout(() => { domBtn.style.background = '#2a9d8f'; }, 1500);
+          domBtn.style.background = SUCCESS_CSS;
+          setTimeout(() => { domBtn.style.background = TEAL_CSS; }, 1500);
         } catch { /* ignore */ }
       }
     });

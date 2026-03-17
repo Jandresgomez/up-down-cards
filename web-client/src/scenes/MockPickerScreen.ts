@@ -1,5 +1,6 @@
 import { Container, Text, Graphics } from 'pixi.js';
 import { MOCK_SCENARIOS } from '../utils/mockData';
+import { BG_SCENE, BG_ROW, TEAL, BTN_PLAYING, TEXT_PRIMARY, TEXT_SECONDARY, MUTED } from '../utils/colors';
 
 export class MockPickerScreen {
   private container: Container;
@@ -19,12 +20,12 @@ export class MockPickerScreen {
 
     const bg = new Graphics();
     bg.rect(0, 0, w, h);
-    bg.fill(0x1a1a2e);
+    bg.fill(BG_SCENE);
     this.container.addChild(bg);
 
     const title = new Text({
       text: 'Mock Scenario Picker',
-      style: { fontSize: 32, fill: 0xffffff, fontWeight: 'bold' },
+      style: { fontSize: 32, fill: TEXT_PRIMARY, fontWeight: 'bold' },
     });
     title.anchor.set(0.5);
     title.x = cx;
@@ -33,7 +34,7 @@ export class MockPickerScreen {
 
     const sub = new Text({
       text: 'Choose a scenario and phase to preview',
-      style: { fontSize: 16, fill: 0xaaaaaa },
+      style: { fontSize: 16, fill: TEXT_SECONDARY },
     });
     sub.anchor.set(0.5);
     sub.x = cx;
@@ -51,7 +52,7 @@ export class MockPickerScreen {
 
     // Column headers
     const makeHeader = (text: string, x: number, y: number) => {
-      const t = new Text({ text, style: { fontSize: 13, fill: 0x888888 } });
+      const t = new Text({ text, style: { fontSize: 13, fill: MUTED } });
       t.anchor.set(0.5, 1);
       t.x = x;
       t.y = y;
@@ -67,19 +68,19 @@ export class MockPickerScreen {
 
       const rowBg = new Graphics();
       rowBg.roundRect(startX - 12, rowY, totalW + 24, rowH - 8, 10);
-      rowBg.fill(0x252545);
+      rowBg.fill(BG_ROW);
       this.container.addChild(rowBg);
 
       const label = new Text({
         text: scenario.label,
-        style: { fontSize: 15, fill: 0xffffff },
+        style: { fontSize: 15, fill: TEXT_PRIMARY },
       });
       label.anchor.set(0, 0.5);
       label.x = startX;
       label.y = rowCentreY;
       this.container.addChild(label);
 
-      const bettingBtn = this.makeButton('Betting', btnW, btnH, 0x2a9d8f);
+      const bettingBtn = this.makeButton('Betting', btnW, btnH, TEAL);
       bettingBtn.x = startX + labelW + colGap;
       bettingBtn.y = rowCentreY - btnH / 2;
       bettingBtn.eventMode = 'static';
@@ -89,7 +90,7 @@ export class MockPickerScreen {
       });
       this.container.addChild(bettingBtn);
 
-      const playingBtn = this.makeButton('Playing', btnW, btnH, 0x457b9d);
+      const playingBtn = this.makeButton('Playing', btnW, btnH, BTN_PLAYING);
       playingBtn.x = startX + labelW + colGap * 2 + btnW;
       playingBtn.y = rowCentreY - btnH / 2;
       playingBtn.eventMode = 'static';
@@ -109,7 +110,7 @@ export class MockPickerScreen {
     btn.addChild(bg);
     const label = new Text({
       text,
-      style: { fontSize: 15, fill: 0xffffff, fontWeight: 'bold' },
+      style: { fontSize: 15, fill: TEXT_PRIMARY, fontWeight: 'bold' },
     });
     label.anchor.set(0.5);
     label.x = w / 2;

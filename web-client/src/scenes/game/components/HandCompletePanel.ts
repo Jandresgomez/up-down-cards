@@ -1,6 +1,7 @@
 import { Container, Text } from 'pixi.js';
 import { isMobile } from '../../../utils/responsive';
 import { Button } from './Button';
+import { GOLD, TEXT_SECONDARY, SUCCESS, DISABLED } from '../../../utils/colors';
 
 export class HandCompletePanel extends Container {
   private winnerText: Text;
@@ -19,20 +20,20 @@ export class HandCompletePanel extends Container {
 
     this.winnerText = new Text({
       text: `${winnerLabel} wins this Hand!`,
-      style: { fontSize: mobile ? 24 : 32, fill: 0xffd700, fontWeight: 'bold' },
+      style: { fontSize: mobile ? 24 : 32, fill: GOLD, fontWeight: 'bold' },
     });
     this.winnerText.anchor.set(0.5, 0);
 
     this.readyText = new Text({
       text: `${readyCount}/${totalPlayers}`,
-      style: { fontSize: 24, fill: 0xaaaaaa },
+      style: { fontSize: 24, fill: TEXT_SECONDARY },
     });
     this.readyText.anchor.set(0.5, 0);
 
     this.continueBtn = new Button(
       hasClicked ? 'Waiting...' : 'Continue',
       200, 60,
-      hasClicked ? 0x666666 : 0x4caf50
+      hasClicked ? DISABLED : SUCCESS
     );
     if (!hasClicked) {
       this.continueBtn.on('pointerdown', onContinue);
