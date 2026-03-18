@@ -91,7 +91,7 @@ function handleGameStateUpdate(gameState: GameState): void {
       showWaitingRoomScreen(gameState);
     } else {
       // Update existing waiting room
-      currentScreen.updatePlayers(gameState.players.length);
+      currentScreen.updatePlayers(gameState.players);
       currentScreen.updateSettings(gameState.numberOfRounds, gameState.maxPlayers, gameState.players.length);
     }
   } else {
@@ -176,7 +176,7 @@ function showWaitingRoomScreen(gameState: GameState): void {
   const waitingRoom = new WaitingRoomScreen(
     gameState.id,
     isAdmin,
-    gameState.players.length,
+    gameState.players,
     gameState.numberOfRounds,
     Math.floor(51 / gameState.players.length),
     async (rounds) => {

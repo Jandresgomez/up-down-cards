@@ -29,7 +29,7 @@ router.post('/createRoom', async (req: Request, res: Response) => {
       id: roomId,
       adminId: playerId,
       status: 'waiting',
-      maxPlayers: 6,
+      maxPlayers: 10,
       numberOfRounds,
       players: [playerState],
       playerOrder: [playerId],

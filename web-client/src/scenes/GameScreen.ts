@@ -97,7 +97,7 @@ export class GameScreen {
     const playerIds = gameState.players.map(p => p.id);
     const missingIds = playerIds.filter(id => !(id in this.playerNames));
     if (missingIds.length > 0) {
-      getPlayers(playerIds).then(res => {
+      getPlayers(missingIds).then(res => {
         if (res.success) {
           this.playerNames = { ...this.playerNames, ...res.players };
           this.render();

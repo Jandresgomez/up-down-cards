@@ -1,6 +1,9 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { getResponsiveSizes } from '../utils/responsive';
 import { TEAL, TEAL_CSS, SUCCESS_CSS, TEXT_PRIMARY, TEXT_SECONDARY } from '../utils/colors';
+import { WaitingPlayersList } from './game/components/WaitingPlayersList';
+import { PlayerState } from '../types/game-types';
+import { getPlayers } from '../api/api';
 
 const CLIPBOARD_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:60%;height:60%"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>`;
 const SHARE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:60%;height:60%"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`;
@@ -8,8 +11,8 @@ const SHARE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" f
 export class WaitingRoomScreen {
   private container: Container;
   private isAdmin: boolean;
-  private numberOfPlayers: number;
   private numberOfRounds: number;
+  private playersList: PlayerState[] = [];
   private maxPlayers: number;
   private maxRounds: number;
   private onRoundsChange: (rounds: number) => void;
@@ -17,7 +20,7 @@ export class WaitingRoomScreen {
   private onLeaveRoom: () => void;
   private onCloseRoom: () => void;
   private roundsText: Text;
-  private playersText: Text;
+  private waitingPlayersList: WaitingPlayersList;
   private maxRoundsText: Text | null = null;
   private title: Text;
   private roomText: Text;
@@ -28,11 +31,12 @@ export class WaitingRoomScreen {
   private roomId: string;
   private adminControls: Container[] = [];
   private nonAdminControls: Container[] = [];
+  private playerNames: Record<string, { name: string }>;
 
   constructor(
     roomId: string,
     isAdmin: boolean,
-    numberOfPlayers: number,
+    playersList: PlayerState[],
     numberOfRounds: number,
     maxRounds: number,
     onRoundsChange: (rounds: number) => void,
@@ -43,9 +47,11 @@ export class WaitingRoomScreen {
     this.container = new Container();
     this.roomId = roomId;
     this.isAdmin = isAdmin;
-    this.numberOfPlayers = numberOfPlayers;
+    this.playersList = playersList;
     this.numberOfRounds = numberOfRounds;
-    this.maxPlayers = 6;
+    this.maxPlayers = 10;
+    this.playerNames = {};
+    this.waitingPlayersList = new WaitingPlayersList([], this.maxPlayers);
     this.maxRounds = maxRounds;
     this.onRoundsChange = onRoundsChange;
     this.onStartGame = onStartGame;
@@ -55,11 +61,6 @@ export class WaitingRoomScreen {
     this.roundsText = new Text({
       text: '',
       style: { fontSize: 32, fill: TEXT_PRIMARY, fontWeight: 'bold' }
-    });
-
-    this.playersText = new Text({
-      text: '',
-      style: { fontSize: 24, fill: TEXT_PRIMARY }
     });
 
     this.title = new Text({
@@ -74,6 +75,7 @@ export class WaitingRoomScreen {
 
     this.createUI(roomId);
     this.resize();
+    this.updatePlayers(this.playersList);
 
     window.addEventListener('resize', () => this.resize());
   }
@@ -102,9 +104,7 @@ export class WaitingRoomScreen {
     this.copyDomBtn = this.createDomButton(CLIPBOARD_SVG, () => this.handleCopy());
     this.shareDomBtn = this.createDomButton(SHARE_SVG, () => this.handleShare());
 
-    this.playersText.text = `Players: ${this.numberOfPlayers} / ${this.maxPlayers}`;
-    this.playersText.anchor.set(0.5);
-    this.container.addChild(this.playersText);
+    this.container.addChild(this.waitingPlayersList);
 
     if (this.isAdmin) {
       this.createAdminControls();
@@ -189,23 +189,12 @@ export class WaitingRoomScreen {
     this.nonAdminControls.push(leaveBtn);
   }
 
-  private adaptiveSpacing(sizes: ReturnType<typeof this.getScreenResponsiveSizes>): number {
-    const btnSize = sizes.inputHeight;
-    const itemHeights = this.isAdmin
-      ? [sizes.titleSize, btnSize, sizes.fontSize, sizes.fontSize, sizes.roundsSize, 16, sizes.buttonLarge.height, sizes.buttonLarge.height]
-      : [sizes.titleSize, btnSize, sizes.fontSize, sizes.fontSize, sizes.buttonLarge.height];
-    const totalContent = itemHeights.reduce((a, b) => a + b, 0);
-    const available = sizes.height * 0.82;
-    const spacing = (available - totalContent) / (itemHeights.length - 1);
-    return Math.max(sizes.spacing * 0.5, Math.min(sizes.spacing * 3, spacing));
-  }
-
   private resize(): void {
     const sizes = this.getScreenResponsiveSizes();
     const centerX = sizes.width / 2;
     const btnSize = sizes.inputHeight;
-    const spacing = this.adaptiveSpacing(sizes);
-    let currentY = sizes.height * 0.09;
+    const spacing = sizes.spacing * 2;
+    let currentY = sizes.height * 0.12;
 
     // Title
     this.title.style.fontSize = sizes.titleSize;
@@ -242,11 +231,10 @@ export class WaitingRoomScreen {
 
     currentY += btnSize + spacing;
 
-    // Players count
-    this.playersText.style.fontSize = sizes.fontSize;
-    this.playersText.x = centerX;
-    this.playersText.y = currentY;
-    currentY += sizes.fontSize + spacing;
+    // Players mini panel
+    this.waitingPlayersList.x = 0;
+    this.waitingPlayersList.y = currentY;
+    currentY += this.waitingPlayersList.height + spacing;
 
     if (this.isAdmin) {
       this.resizeAdminControls(centerX, currentY, sizes, spacing);
@@ -409,9 +397,20 @@ export class WaitingRoomScreen {
     this.onRoundsChange(this.numberOfRounds);
   }
 
-  updatePlayers(count: number): void {
-    this.numberOfPlayers = count;
-    this.playersText.text = `Players: ${this.numberOfPlayers} / ${this.maxPlayers}`;
+  updatePlayers(playersList: PlayerState[]): void {
+    this.playersList = playersList;
+    const playerIds = this.playersList.map(p => p.id);
+    const missingIds = playerIds.filter(id => !(id in this.playerNames));
+
+    if (missingIds.length > 0) {
+      getPlayers(missingIds).then(res => {
+        if (res.success) {
+          this.playerNames = { ...this.playerNames, ...res.players };
+          this.waitingPlayersList.updatePlayers(this.playersList.map(p => this.playerNames[p.id]?.name ?? p.id));
+          this.resize(); // adjust sizes otherwise the new names might overflow
+        }
+      }).catch((err) => { console.error('Failed to fetch player names', err); });
+    }
   }
 
   updateSettings(rounds: number, maxPlayers: number, playerCount: number): void {
@@ -419,7 +418,7 @@ export class WaitingRoomScreen {
     this.maxPlayers = maxPlayers;
     this.maxRounds = Math.floor(51 / playerCount);
     this.roundsText.text = `${this.numberOfRounds}`;
-    this.playersText.text = `Players: ${this.numberOfPlayers} / ${this.maxPlayers}`;
+    this.waitingPlayersList.updateMaxPlayers(this.maxPlayers);
     if (this.maxRoundsText) {
       this.maxRoundsText.text = `(Max: ${this.maxRounds})`;
     }
