@@ -1,4 +1,4 @@
-import { GameState, GameStatus, Suit, Rank } from '../types/game-types';
+import { GameState, GameStatus, Suit, Rank, HandState } from '../types/game-types';
 
 export const MOCK_MY_PLAYER_ID = 'mock-player-1';
 
@@ -9,6 +9,10 @@ const ALL_MOCK_PLAYERS = [
   { id: 'mock-player-4', naturalOrder: 3 },
   { id: 'mock-player-5', naturalOrder: 4 },
   { id: 'mock-player-6', naturalOrder: 5 },
+  { id: 'mock-player-7', naturalOrder: 6 },
+  { id: 'mock-player-8', naturalOrder: 7 },
+  { id: 'mock-player-9', naturalOrder: 8 },
+  { id: 'mock-player-10', naturalOrder: 9 },
 ];
 
 export const MOCK_PLAYER_NAMES: Record<string, { name: string }> = {
@@ -18,6 +22,10 @@ export const MOCK_PLAYER_NAMES: Record<string, { name: string }> = {
   'mock-player-4': { name: 'Carlos' },
   'mock-player-5': { name: 'Lucia' },
   'mock-player-6': { name: 'Andres' },
+  'mock-player-7': { name: 'Elena' },
+  'mock-player-8': { name: 'Diego' },
+  'mock-player-9': { name: 'Isabella' },
+  'mock-player-10': { name: 'Mateo' },
 };
 
 export interface MockScenario {
@@ -29,9 +37,11 @@ export interface MockScenario {
 
 export const MOCK_SCENARIOS: MockScenario[] = [
   { id: 1, label: '6 players, 8 cards', playerCount: 6, cardsPerPlayer: 8 },
-  { id: 2, label: '5 players, 10 cards', playerCount: 5, cardsPerPlayer: 10 },
-  { id: 3, label: '4 players, 5 cards', playerCount: 4, cardsPerPlayer: 5 },
-  { id: 4, label: '6 players, 1 card', playerCount: 6, cardsPerPlayer: 1 },
+  { id: 2, label: '10 players, 10 cards', playerCount: 10, cardsPerPlayer: 10 },
+  { id: 3, label: '5 players, 10 cards', playerCount: 5, cardsPerPlayer: 10 },
+  { id: 4, label: '4 players, 5 cards', playerCount: 4, cardsPerPlayer: 5 },
+  { id: 5, label: '6 players, 1 card', playerCount: 6, cardsPerPlayer: 1 },
+  { id: 6, label: '2 players, 25 cards', playerCount: 2, cardsPerPlayer: 25 },
 ];
 
 const SUITS: Suit[] = ['spades', 'hearts', 'diamonds', 'clubs'];
@@ -75,15 +85,19 @@ export function getMockGameState(phase: 'betting' | 'playing_hand', scenarioId: 
   });
 
   // Mesa card is the first card after all hands
-  const mesaCard = deck[playerCount * cardsPerPlayer];
+  const mesaCard = { suit: SUITS[0], rank: RANKS[0] };
 
-  const currentHand = status === 'playing_hand' ? {
+  const currentHand: HandState | null = status === 'playing_hand' ? {
     handNumber: 2,
-    cardsPlayed: [
-      { playerId: playerOrder[1], card: { suit: 'spades' as const, rank: 'Q' as const }, playOrder: 0, timestamp: Date.now() },
-      { playerId: playerOrder[2], card: { suit: 'spades' as const, rank: '8' as const }, playOrder: 1, timestamp: Date.now() },
-    ],
-    pinta: 'hearts' as const,
+    cardsPlayed: players.map((p, pos) => ({
+      playerId: p.id, card: {
+        suit: SUITS[0],
+        rank: RANKS[pos + 1]
+      },
+      playOrder: 0,
+      timestamp: Date.now()
+    })),
+    pinta: SUITS[0],
     currentPlayerIndex: 0,
     handOrder: playerOrder,
   } : null;

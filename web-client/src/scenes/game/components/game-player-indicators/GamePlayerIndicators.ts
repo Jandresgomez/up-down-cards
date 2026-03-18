@@ -102,7 +102,6 @@ export class GamePlayerIndicators extends Container {
           return (this.gameState?.currentRound?.currentHand?.handOrder.findIndex(id => id === player.id)) ?? undefined;
         }
       })();
-      console.log(this.gameState)
       const playerColor = new Graphics();
       playerColor
         .roundRect(0, 0, playerIconDims.width, playerIconDims.height, 8)

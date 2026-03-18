@@ -1,6 +1,7 @@
 import { Container, Text, Graphics } from 'pixi.js';
 import { MOCK_SCENARIOS } from '../utils/mockData';
 import { BG_SCENE, BG_ROW, TEAL, BTN_PLAYING, TEXT_PRIMARY, TEXT_SECONDARY, MUTED } from '../utils/colors';
+import { vw } from '../utils/responsive';
 
 export class MockPickerScreen {
   private container: Container;
@@ -42,10 +43,10 @@ export class MockPickerScreen {
     this.container.addChild(sub);
 
     const rowH = 72;
-    const btnW = 120;
+    const btnW = vw(20);
     const btnH = 42;
-    const labelW = Math.min(220, w * 0.38);
-    const colGap = 16;
+    const labelW = vw(40);
+    const colGap = vw(2);
     const totalW = labelW + colGap + btnW + colGap + btnW;
     const startX = cx - totalW / 2;
     const startY = h * 0.25;

@@ -1,7 +1,7 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { BG_SCENE, BG_TABLE, TABLE_BORDER } from '../../../utils/colors';
 import { GameState } from '../../../types/game-types';
-import { getResponsiveSizes, getCardDimensions, getMesaCardDimensions } from '../../../utils/responsive';
+import { getResponsiveSizes, getCardDimensions, getMesaCardDimensions, getPlayedCardDimensions } from '../../../utils/responsive';
 import { RoundTitle } from '../components/RoundTitle';
 import { PlayerHand } from '../components/player-hand/PlayerHand';
 import { TableCards } from '../components/TableCards';
@@ -88,7 +88,7 @@ export class PlayingScene extends Container {
 
   private layout(): void {
     const sizes = getResponsiveSizes();
-    const cardDims = getCardDimensions();
+    const playedCarDims = getPlayedCardDimensions();
     const sp = sizes.spacing;
     const pad = sizes.padding;
 
@@ -120,7 +120,7 @@ export class PlayingScene extends Container {
     this.tableCards.layout(sp * 2, tableCardsTop, tableCardsWidth);
 
     // Table background spans the full table area (mesa row + 2 card rows)
-    const tableAreaBottom = tableCardsTop + 2 * (cardDims.height + cardDims.margin);
+    const tableAreaBottom = tableCardsTop + 2 * (playedCarDims.height + playedCarDims.margin);
     this.tableBackground.clear();
     this.tableBackground.roundRect(
       pad,
