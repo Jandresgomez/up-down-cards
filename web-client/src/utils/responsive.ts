@@ -17,7 +17,7 @@ export interface ResponsiveSizes {
 }
 
 const MOBILE_PADDING = 8;
-const DESKTOP_PADDING = 16;
+const DESKTOP_PADDING = 12;
 
 export function getResponsiveSizes(): ResponsiveSizes {
   const width = window.innerWidth;
