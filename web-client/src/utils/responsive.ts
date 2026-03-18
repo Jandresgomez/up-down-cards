@@ -60,7 +60,7 @@ export const vmin = (percent: number) => (Math.min(window.innerWidth, window.inn
 // Mobile detection
 export const isMobile = () => window.innerWidth < 768;
 
-// Responsive card dimensions — height is 10% of viewport height so 2 rows fit per area
+// Responsive card dimensions
 export const getCardDimensions = () => {
   const mobile = isMobile();
   const cardHeight = Math.floor(window.innerHeight * 0.08);
@@ -69,6 +69,18 @@ export const getCardDimensions = () => {
     width: cardWidth,
     height: cardHeight,
     margin: mobile ? 4 : 5,
+  };
+};
+
+export const getPlayedCardDimensions = () => {
+  const sizes = getResponsiveSizes();
+  const normalCardDims = getCardDimensions();
+  const cardHeight = normalCardDims.height + 2 * sizes.padding;
+  const cardWidth = normalCardDims.width + sizes.padding;
+  return {
+    width: cardWidth,
+    height: cardHeight,
+    margin: sizes.isMobile ? 4 : 5,
   };
 };
 

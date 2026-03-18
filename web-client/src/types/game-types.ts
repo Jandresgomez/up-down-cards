@@ -46,6 +46,7 @@ export interface HandState {
   pinta: Suit | null;
   currentPlayerIndex: number;
   handOrder: string[];
+  playersReady?: string[];
 }
 
 export interface RoundResult {
@@ -71,6 +72,7 @@ export interface RoundState {
   handsPlayed: number;
   currentHand: HandState | null;
   completedHands: HandResult[];
+  playersReady?: string[];
 }
 
 export interface GameState {
