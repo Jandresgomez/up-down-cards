@@ -1,6 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { GameState } from '../../../../types/game-types';
-import { getResponsiveSizes } from '../../../../utils/responsive';
+import { getResponsiveSizes, vw } from '../../../../utils/responsive';
 import { BG_OVERLAY, BG_PANEL, GOLD, TEXT_SECONDARY } from '../../../../utils/colors';
 import { createPodiumDisplay, PodiumEntry } from './PodiumDisplay';
 import { createGameCompleteStandingsTable, GameStandingRow } from './GameCompleteStandingsTable';
@@ -50,7 +50,7 @@ export class GameCompleteOverlay extends Container {
         const { width: sw, height: sh, isMobile } = sizes;
         const pad = sizes.padding;
         const panelPad = isMobile ? 20 : 28;
-        const panelW = isMobile ? sw * 0.9 : 540;
+        const panelW = isMobile ? vw(96) : 700;
 
         // ── Build sorted standings ──
         const rows: GameStandingRow[] = [...gameState.players]

@@ -6,8 +6,21 @@ import {
 } from '../../../../utils/colors';
 import { ScrollBox } from '@pixi/ui';
 
-function truncName(name: string, maxChars: number): string {
-    return name.length > maxChars ? name.slice(0, maxChars - 1) + '…' : name;
+/**
+ * Truncates `text` so that its rendered width (in the given style) fits within
+ * `availableWidth` after subtracting `extrasWidth` (space taken by surrounding
+ * decorations like rank icons and emojis). Returns the original text if it fits.
+ */
+function truncToFit(text: string, extrasWidth: number, availableWidth: number, style: Record<string, unknown>): string {
+    const nameW = availableWidth - extrasWidth;
+    if (nameW <= 0) return '';
+    const t = new Text({ text, style });
+    if (t.width <= nameW) return text;
+    for (let i = text.length - 1; i >= 1; i--) {
+        t.text = text.slice(0, i);
+        if (t.width <= nameW) return t.text;
+    }
+    return text[0];
 }
 
 export interface StandingsRow {
@@ -101,6 +114,9 @@ export function createStandingsTable(cfg: StandingsTableConfig): { container: Co
     const sTotalX = totalColRight - panelX;
     const tableH = Math.min(rows.length, maxVisibleRows) * rowH;
 
+    // Available pixel width for the player name column
+    const playerMaxW = sBetX - betColW / 2 - colGap - sPlayerX;
+
     const rowContainers: Container[] = rows.map((row, idx) => {
         const rc = new Container();
         rc.boundsArea = new Rectangle(0, 0, panelW, rowH);
@@ -121,14 +137,17 @@ export function createStandingsTable(cfg: StandingsTableConfig): { container: Co
 
         const rankIcon = idx === 0 ? '👑' : `${idx + 1}.`;
         const statusEmoji = row.delivered ? '✅' : '❌';
+        const nameStyle = {
+            fontSize: sizes.smallFontSize,
+            fill: row.delivered ? DELIVERED : FAILED,
+            fontWeight: idx === 0 ? 'bold' as const : 'normal' as const,
+        };
+        const extrasW = new Text({ text: `${rankIcon}  ${statusEmoji}`, style: nameStyle }).width;
+        const displayName = truncToFit(row.name, extrasW, playerMaxW, nameStyle);
 
         const nameText = new Text({
-            text: `${rankIcon} ${truncName(row.name, isMobile ? 8 : row.name.length)} ${statusEmoji}`,
-            style: {
-                fontSize: sizes.smallFontSize,
-                fill: row.delivered ? DELIVERED : FAILED,
-                fontWeight: idx === 0 ? 'bold' : 'normal',
-            },
+            text: `${rankIcon} ${displayName} ${statusEmoji}`,
+            style: nameStyle,
         });
         nameText.anchor.set(0, 0.5);
         nameText.x = sPlayerX;

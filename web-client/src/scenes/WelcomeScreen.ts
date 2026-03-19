@@ -103,6 +103,7 @@ export class WelcomeScreen {
   }
 
   private handleProfileSubmit(): void {
+    (document.activeElement as HTMLElement)?.blur(); // release the keyboard from the text input
     const name = this.nameInput.value.trim();
     if (!name) {
       this.showError('Please enter your name');

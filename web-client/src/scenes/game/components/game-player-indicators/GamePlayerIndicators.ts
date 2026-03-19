@@ -59,7 +59,7 @@ export class GamePlayerIndicators extends Container {
       currentPlayerId = currentHand ? currentHand.handOrder[currentHand.currentPlayerIndex] : null;
     }
 
-    const indicatorHeight = sizes.isMobile ? 56 : 90;
+    const indicatorHeight = sizes.isMobile ? 48 : 90;
     // const indicatorCompactHeight = indicatorHeight;
     const indicatorWidth = (() => {
       //sizes.isMobile ? 170 : 200
@@ -146,7 +146,7 @@ export class GamePlayerIndicators extends Container {
       }
 
       nameText.x = secondColumnX;
-      nameText.y = innerPadding;
+      nameText.y = innerPadding / 2;
       nameText.anchor.set(0, 0);
       indicator.addChild(nameText);
 

@@ -2,10 +2,6 @@ import { Container, Text } from 'pixi.js';
 import { ResponsiveSizes } from '../../../../utils/responsive';
 import { GOLD, RANK_2ND, RANK_3RD } from '../../../../utils/colors';
 
-function truncName(name: string, maxChars: number): string {
-    return name.length > maxChars ? name.slice(0, maxChars - 1) + '…' : name;
-}
-
 export interface PodiumEntry {
     name: string;
     total: number;
@@ -36,10 +32,8 @@ export function createPodiumDisplay(
         const entry = entries[i];
         const cfg = PODIUM_CONFIG[i];
         const fontSize = isMobile ? cfg.mobileFontSize : cfg.desktopFontSize;
-        const displayName = truncName(entry.name, isMobile ? 10 : entry.name.length);
-
         const t = new Text({
-            text: `${cfg.medal}  ${displayName}  —  ${entry.total} pts`,
+            text: `${cfg.medal}  ${entry.name}  —  ${entry.total} pts`,
             style: { fontSize, fill: cfg.color, fontWeight: i === 0 ? 'bold' : 'normal' },
         });
         t.anchor.set(0.5, 0);

@@ -5,10 +5,6 @@ import {
 } from '../../../../utils/colors';
 import { ScrollBox } from '@pixi/ui';
 
-function truncName(name: string, maxChars: number): string {
-    return name.length > maxChars ? name.slice(0, maxChars - 1) + '…' : name;
-}
-
 export interface GameStandingRow {
     playerId: string;
     name: string;
@@ -57,11 +53,20 @@ export function createGameCompleteStandingsTable(
     c.addChild(hScore);
     cursor += isMobile ? 20 : 24;
 
+    // ── Measure score column to calculate available player space ──
+    let scoreColW = new Text({ text: 'Score', style: headerStyle }).width;
+    for (const r of rows) {
+        const w = new Text({ text: `${r.total}`, style: { fontSize: sizes.fontSize, fill: TEXT_PRIMARY, fontWeight: 'bold' as const } }).width;
+        if (w > scoreColW) scoreColW = w;
+    }
+    const colGap = isMobile ? 10 : 14;
+
     // ── Scrollable rows ──
     const tableRowW = panelW - tableInset * 2;
     const sColLeft = tableInset;
     const sPlayerX = colLeft - panelX;
     const sScoreX = colRight - panelX;
+    const playerMaxW = sScoreX - scoreColW - colGap - sPlayerX;
     const tableH = Math.min(rows.length, maxVisibleRows) * rowH;
 
     const rowContainers: Container[] = rows.map((row, idx) => {
@@ -84,15 +89,15 @@ export function createGameCompleteStandingsTable(
 
         const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
         const rankColor = idx === 0 ? GOLD : idx === 1 ? RANK_2ND : idx === 2 ? RANK_3RD : TEXT_PRIMARY;
-        const displayName = truncName(row.name, isMobile ? 8 : row.name.length);
+        const nameStyle = {
+            fontSize: sizes.smallFontSize,
+            fill: rankColor,
+            fontWeight: idx < 3 ? 'bold' as const : 'normal' as const,
+        };
 
         const nameText = new Text({
-            text: `${medal}  ${displayName}`,
-            style: {
-                fontSize: sizes.smallFontSize,
-                fill: rankColor,
-                fontWeight: idx < 3 ? 'bold' : 'normal',
-            },
+            text: `${medal}  ${row.name}`,
+            style: nameStyle,
         });
         nameText.anchor.set(0, 0.5);
         nameText.x = sPlayerX;
