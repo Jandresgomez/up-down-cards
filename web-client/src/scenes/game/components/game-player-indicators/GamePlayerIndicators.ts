@@ -76,7 +76,8 @@ export class GamePlayerIndicators extends Container {
     let currentRow = 0;
 
 
-    players.forEach((player, index) => {
+    const orderedPlayers = this.gameState.playerOrder.map(pId => players.find(p => p.id === pId)).filter(el => !!el)
+    orderedPlayers.forEach((player, index) => {
       if (index > 0 && index % indicatorsPerRow === 0) {
         currentRow++;
         currentX = Xspacing;
@@ -185,9 +186,5 @@ export class GamePlayerIndicators extends Container {
       extraRow.y = extraRowY;
       this.addChild(extraRow);
     }
-
-
   }
-
-
 }

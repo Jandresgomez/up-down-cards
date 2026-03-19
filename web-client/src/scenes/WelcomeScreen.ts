@@ -148,7 +148,7 @@ export class WelcomeScreen {
     this.createBtn = this.createButton('Create New Room', sizes.buttonLarge.width, sizes.buttonLarge.height);
     this.createBtn.eventMode = 'static';
     this.createBtn.cursor = 'pointer';
-    this.createBtn.on('pointerdown', () => this.onCreateRoom());
+    this.createBtn.on('pointerdown', () => this.handleCreateRoom());
     this.lobbyContainer.addChild(this.createBtn);
 
     this.joinText = new Text({
@@ -291,7 +291,13 @@ export class WelcomeScreen {
     text.y = height / 2;
   }
 
+  private handleCreateRoom(): void {
+    (document.activeElement as HTMLElement)?.blur(); // release the keyboard from the text input
+    this.onCreateRoom();
+  }
+
   private handleJoinRoom(): void {
+    (document.activeElement as HTMLElement)?.blur(); // release the keyboard from the text input 
     const roomNumber = this.roomInput.value.trim();
     if (!roomNumber) {
       this.showError('Provided room ID is not valid');
