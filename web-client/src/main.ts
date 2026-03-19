@@ -39,8 +39,14 @@ async function initApp() {
     const params = new URLSearchParams(window.location.search);
     const phase = params.get('phase');
     const scenarioId = parseInt(params.get('scenario') ?? '1', 10);
-    if (phase === 'betting' || phase === 'playing') {
-      const status = phase === 'betting' ? 'betting' : 'playing_hand';
+    const phaseToStatus: Record<string, 'betting' | 'playing_hand' | 'round_complete'> = {
+      betting: 'betting',
+      playing: 'playing_hand',
+      round_complete: 'round_complete',
+    };
+    const status = phase ? phaseToStatus[phase] : undefined;
+
+    if (status) {
       const mockState = getMockGameState(status, scenarioId);
       const gameScreen = new GameScreen('mock-room', MOCK_MY_PLAYER_ID, MOCK_PLAYER_NAMES);
       gameScreen.updateGameState(mockState);

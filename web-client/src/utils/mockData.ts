@@ -35,14 +35,24 @@ export interface MockScenario {
   cardsPerPlayer: number;
 }
 
-export const MOCK_SCENARIOS: MockScenario[] = [
-  { id: 1, label: '6 players, 8 cards', playerCount: 6, cardsPerPlayer: 8 },
-  { id: 2, label: '10 players, 10 cards', playerCount: 10, cardsPerPlayer: 10 },
-  { id: 3, label: '5 players, 10 cards', playerCount: 5, cardsPerPlayer: 10 },
-  { id: 4, label: '4 players, 5 cards', playerCount: 4, cardsPerPlayer: 5 },
-  { id: 5, label: '6 players, 1 card', playerCount: 6, cardsPerPlayer: 1 },
-  { id: 6, label: '2 players, 25 cards', playerCount: 2, cardsPerPlayer: 25 },
+const SCENARIO_CONFIGS: [number, number][] = [
+  [10, 10],
+  [10, 5],
+  [9, 5],
+  [8, 6],
+  [6, 8],
+  [6, 1],
+  [5, 10],
+  [4, 5],
+  [2, 25],
 ];
+
+export const MOCK_SCENARIOS: MockScenario[] = SCENARIO_CONFIGS.map(([p, c], i) => ({
+  id: i + 1,
+  label: `${p}P, ${c}C`,
+  playerCount: p,
+  cardsPerPlayer: c,
+}));
 
 const SUITS: Suit[] = ['spades', 'hearts', 'diamonds', 'clubs'];
 const RANKS: Rank[] = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2'];
@@ -57,7 +67,7 @@ function buildDeck(): { suit: Suit; rank: Rank }[] {
   return deck;
 }
 
-export function getMockGameState(phase: 'betting' | 'playing_hand', scenarioId: number = 1): GameState {
+export function getMockGameState(phase: 'betting' | 'playing_hand' | 'round_complete', scenarioId: number = 1): GameState {
   const scenario = MOCK_SCENARIOS.find(s => s.id === scenarioId) ?? MOCK_SCENARIOS[0];
   const { playerCount, cardsPerPlayer } = scenario;
   const status: GameStatus = phase;
@@ -66,11 +76,30 @@ export function getMockGameState(phase: 'betting' | 'playing_hand', scenarioId: 
   const mockPlayers = ALL_MOCK_PLAYERS.slice(0, playerCount);
   const playerOrder = mockPlayers.map(p => p.id);
 
-  // Build bets: for playing_hand all placed; for betting only the first half placed
+  // Build bets: for playing_hand/round_complete all placed; for betting only the first half
   const halfBetting = Math.floor(playerCount / 2);
   const players = mockPlayers.map((p, i) => {
     const hand = deck.slice(i * cardsPerPlayer, (i + 1) * cardsPerPlayer);
     const betValue = i % (cardsPerPlayer + 1); // spread bets across valid range
+
+    if (phase === 'round_complete') {
+      // Simulate finished round: some players deliver, some fail
+      const bet = betValue;
+      const delivered = i % 3 !== 2; // ~2/3 deliver
+      const handsWon = delivered ? bet : Math.max(0, bet - 1);
+      const points = delivered ? 10 + 2 * handsWon : 0;
+      // Give varied totals so the leaderboard is interesting
+      const priorScore = (playerCount - i) * 12 + (i % 2 === 0 ? 8 : 0);
+      return {
+        id: p.id,
+        naturalOrder: p.naturalOrder,
+        hand,
+        bet,
+        handsWon,
+        totalScore: priorScore + points,
+      };
+    }
+
     const bet = status === 'playing_hand'
       ? betValue
       : (i < halfBetting ? betValue : null);
@@ -121,16 +150,17 @@ export function getMockGameState(phase: 'betting' | 'playing_hand', scenarioId: 
     startedAt: Date.now(),
     completedAt: null,
     currentRound: {
-      roundNumber: 1,
-      roundIndex: 0,
+      roundNumber: 3,
+      roundIndex: 2,
       cardsPerPlayer,
       mesa: mesaCard,
       startingPlayerId: playerOrder[0],
       bettingOrder: playerOrder,
       currentBettingIndex: status === 'betting' ? halfBetting : playerCount,
-      handsPlayed: status === 'playing_hand' ? 1 : 0,
+      handsPlayed: phase === 'round_complete' ? cardsPerPlayer : (status === 'playing_hand' ? 1 : 0),
       currentHand,
       completedHands: [],
+      ...(phase === 'round_complete' ? { playersReady: ['mock-player-3'] } : {}),
     },
   };
 }

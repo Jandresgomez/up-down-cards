@@ -43,6 +43,13 @@ export const RANK_1ST = 0xffd700; // gold
 export const RANK_2ND = 0xc0c0c0; // silver
 export const RANK_3RD = 0xcd7f32; // bronze
 
+// ─── Round Result ────────────────────────────────────────────────────────────
+export const DELIVERED = 0x4caf50; // green — player delivered their bet
+export const FAILED = 0xff6b6b; // soft red — player failed their bet
+export const SCORE_POSITIVE = 0x6fdc8c; // light green — positive score diff
+export const SCORE_ZERO = 0xff6b6b; // soft red — zero score diff (failed)
+export const ROW_HIGHLIGHT = 0x2a2a4e; // subtle highlight for alternating rows
+
 // ─── Disabled / Inactive ─────────────────────────────────────────────────────
 export const DISABLED = 0x666666; // medium gray — disabled buttons, waiting borders
 export const MUTED = 0x888888; // gray — muted/secondary elements

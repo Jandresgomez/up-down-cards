@@ -1,7 +1,21 @@
 import { Container, Text, Graphics } from 'pixi.js';
+import { ScrollBox } from '@pixi/ui';
 import { MOCK_SCENARIOS } from '../utils/mockData';
-import { BG_SCENE, BG_ROW, TEAL, BTN_PLAYING, TEXT_PRIMARY, TEXT_SECONDARY, MUTED } from '../utils/colors';
-import { vw } from '../utils/responsive';
+import { BG_SCENE, BG_ROW, TEAL, BTN_PLAYING, SUCCESS, TEXT_PRIMARY, TEXT_SECONDARY, MUTED } from '../utils/colors';
+import { getResponsiveSizes } from '../utils/responsive';
+
+interface PhaseButton {
+  label: string;
+  shortLabel: string;
+  phase: string;
+  color: number;
+}
+
+const PHASES: PhaseButton[] = [
+  { label: 'Betting', shortLabel: 'Bet', phase: 'betting', color: TEAL },
+  { label: 'Playing', shortLabel: 'Play', phase: 'playing', color: BTN_PLAYING },
+  { label: 'Round End', shortLabel: 'End', phase: 'round_complete', color: SUCCESS },
+];
 
 export class MockPickerScreen {
   private container: Container;
@@ -15,103 +29,142 @@ export class MockPickerScreen {
   private build(): void {
     this.container.removeChildren();
 
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    const sizes = getResponsiveSizes();
+    const { width: w, height: h, isMobile } = sizes;
     const cx = w / 2;
 
+    // Full-screen bg
     const bg = new Graphics();
     bg.rect(0, 0, w, h);
     bg.fill(BG_SCENE);
     this.container.addChild(bg);
 
+    // Title
     const title = new Text({
-      text: 'Mock Scenario Picker',
-      style: { fontSize: 32, fill: TEXT_PRIMARY, fontWeight: 'bold' },
+      text: 'Mock Scenarios',
+      style: { fontSize: sizes.subtitleSize, fill: TEXT_PRIMARY, fontWeight: 'bold' },
     });
     title.anchor.set(0.5);
     title.x = cx;
-    title.y = h * 0.1;
+    title.y = isMobile ? 40 : h * 0.08;
     this.container.addChild(title);
 
     const sub = new Text({
-      text: 'Choose a scenario and phase to preview',
-      style: { fontSize: 16, fill: TEXT_SECONDARY },
+      text: 'Pick a scenario and phase',
+      style: { fontSize: sizes.smallFontSize - 2, fill: TEXT_SECONDARY },
     });
     sub.anchor.set(0.5);
     sub.x = cx;
-    sub.y = h * 0.1 + 48;
+    sub.y = title.y + (isMobile ? 28 : 36);
     this.container.addChild(sub);
 
-    const rowH = 72;
-    const btnW = vw(20);
-    const btnH = 42;
-    const labelW = vw(40);
-    const colGap = vw(2);
-    const totalW = labelW + colGap + btnW + colGap + btnW;
-    const startX = cx - totalW / 2;
-    const startY = h * 0.25;
+    // Layout
+    const margin = isMobile ? 8 : 16;
+    const colGap = isMobile ? 6 : 8;
+    const btnH = isMobile ? 38 : 42;
+    const rowH = isMobile ? 64 : 72;
+    const usableW = w - margin * 2;
 
-    // Column headers
-    const makeHeader = (text: string, x: number, y: number) => {
-      const t = new Text({ text, style: { fontSize: 13, fill: MUTED } });
-      t.anchor.set(0.5, 1);
+    // Button widths: on mobile use compact sizing
+    const btnCount = PHASES.length;
+    const btnTotalGaps = (btnCount - 1) * colGap;
+    const labelW = isMobile ? usableW * 0.34 : usableW * 0.36;
+    const btnAreaW = usableW - labelW - colGap;
+    const maxBtnW = isMobile ? w * 0.16 : 120;
+    const btnW = Math.min(maxBtnW, (btnAreaW - btnTotalGaps) / btnCount);
+
+    // Actual content width based on label + buttons
+    const actualContentW = labelW + colGap + btnCount * btnW + btnTotalGaps;
+    const startX = (w - actualContentW) / 2;
+    const headerY = sub.y + (isMobile ? 28 : 44);
+
+    // Scrollable content via ScrollBox
+    const contentStartY = headerY;
+    const visibleH = h - contentStartY;
+
+    // Column headers in a separate container above the scroll
+    const headerContainer = new Container();
+    headerContainer.y = contentStartY;
+
+    const headerFontSize = isMobile ? 13 : 13;
+    const makeHeader = (text: string, x: number) => {
+      const t = new Text({ text, style: { fontSize: headerFontSize, fill: MUTED } });
+      t.anchor.set(0.5, 0);
       t.x = x;
-      t.y = y;
-      this.container.addChild(t);
+      t.y = 0;
+      headerContainer.addChild(t);
     };
-    makeHeader('Scenario', startX + labelW / 2, startY - 10);
-    makeHeader('Betting', startX + labelW + colGap + btnW / 2, startY - 10);
-    makeHeader('Playing', startX + labelW + colGap * 2 + btnW + btnW / 2, startY - 10);
 
-    MOCK_SCENARIOS.forEach((scenario, idx) => {
-      const rowY = startY + idx * rowH;
-      const rowCentreY = rowY + (rowH - 10) / 2;
+    makeHeader('Scenario', startX + labelW / 2);
+    PHASES.forEach((p, i) => {
+      const btnX = startX + labelW + colGap + i * (btnW + colGap);
+      makeHeader(isMobile ? p.shortLabel : p.label, btnX + btnW / 2);
+    });
+    this.container.addChild(headerContainer);
+
+    const rowStartY = isMobile ? 20 : 28;
+    const scrollTopY = contentStartY + rowStartY;
+    const scrollVisibleH = h - scrollTopY;
+
+    // Build each scenario row as a Container
+    const rowContainers: Container[] = MOCK_SCENARIOS.map((scenario, idx) => {
+      const rowContainer = new Container();
 
       const rowBg = new Graphics();
-      rowBg.roundRect(startX - 12, rowY, totalW + 24, rowH - 8, 10);
+      rowBg.roundRect(startX - 4, 0, actualContentW + 8, rowH - 6, 8);
       rowBg.fill(BG_ROW);
-      this.container.addChild(rowBg);
+      rowContainer.addChild(rowBg);
 
+      const labelFontSize = isMobile ? 15 : 15;
       const label = new Text({
         text: scenario.label,
-        style: { fontSize: 15, fill: TEXT_PRIMARY },
+        style: { fontSize: labelFontSize, fill: TEXT_PRIMARY },
       });
       label.anchor.set(0, 0.5);
-      label.x = startX;
-      label.y = rowCentreY;
-      this.container.addChild(label);
+      label.x = startX + 4;
+      label.y = (rowH - 6) / 2;
+      rowContainer.addChild(label);
 
-      const bettingBtn = this.makeButton('Betting', btnW, btnH, TEAL);
-      bettingBtn.x = startX + labelW + colGap;
-      bettingBtn.y = rowCentreY - btnH / 2;
-      bettingBtn.eventMode = 'static';
-      bettingBtn.cursor = 'pointer';
-      bettingBtn.on('pointerdown', () => {
-        window.location.href = `/mock?phase=betting&scenario=${scenario.id}`;
+      PHASES.forEach((phase, i) => {
+        const btnX = startX + labelW + colGap + i * (btnW + colGap);
+        const btnLabel = isMobile ? phase.shortLabel : phase.label;
+        const btn = this.makeButton(btnLabel, btnW, btnH, phase.color, isMobile);
+        btn.x = btnX;
+        btn.y = (rowH - 6) / 2 - btnH / 2;
+        btn.eventMode = 'static';
+        btn.cursor = 'pointer';
+        btn.on('pointerdown', () => {
+          window.location.href = `/mock?phase=${phase.phase}&scenario=${scenario.id}`;
+        });
+        rowContainer.addChild(btn);
       });
-      this.container.addChild(bettingBtn);
 
-      const playingBtn = this.makeButton('Playing', btnW, btnH, BTN_PLAYING);
-      playingBtn.x = startX + labelW + colGap * 2 + btnW;
-      playingBtn.y = rowCentreY - btnH / 2;
-      playingBtn.eventMode = 'static';
-      playingBtn.cursor = 'pointer';
-      playingBtn.on('pointerdown', () => {
-        window.location.href = `/mock?phase=playing&scenario=${scenario.id}`;
-      });
-      this.container.addChild(playingBtn);
+      return rowContainer;
     });
+
+    const scrollBox = new ScrollBox({
+      width: w,
+      height: scrollVisibleH,
+      type: 'vertical',
+      globalScroll: true,
+      disableDynamicRendering: true,
+      elementsMargin: 6,
+    });
+    scrollBox.addItems(rowContainers);
+    scrollBox.x = 0;
+    scrollBox.y = scrollTopY;
+    this.container.addChild(scrollBox);
   }
 
-  private makeButton(text: string, w: number, h: number, color: number): Container {
+  private makeButton(text: string, w: number, h: number, color: number, compact: boolean): Container {
     const btn = new Container();
     const bg = new Graphics();
-    bg.roundRect(0, 0, w, h, 8);
+    bg.roundRect(0, 0, w, h, 6);
     bg.fill(color);
     btn.addChild(bg);
     const label = new Text({
       text,
-      style: { fontSize: 15, fill: TEXT_PRIMARY, fontWeight: 'bold' },
+      style: { fontSize: compact ? 13 : 14, fill: TEXT_PRIMARY, fontWeight: 'bold' },
     });
     label.anchor.set(0.5);
     label.x = w / 2;
