@@ -5,8 +5,8 @@ import { getPlayerId } from '../utils/playerId';
 import { isMobile, vw, vh, getResponsiveSizes } from '../utils/responsive';
 import { BettingPhase } from './game/phases/BettingPhase';
 import { PlayingPhase } from './game/phases/PlayingPhase';
-import { RoundCompleteOverlay } from './game/overlays/RoundCompleteOverlay';
-import { GameCompleteOverlay } from './game/overlays/GameCompleteOverlay';
+import { RoundCompleteOverlay } from './game/overlays/round-complete/RoundCompleteOverlay';
+import { GameCompleteOverlay } from './game/overlays/game-complete/GameCompleteOverlay';
 import { continueGame, getPlayers } from '../api/api';
 
 export class GameScreen {
