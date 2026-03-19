@@ -39,10 +39,11 @@ async function initApp() {
     const params = new URLSearchParams(window.location.search);
     const phase = params.get('phase');
     const scenarioId = parseInt(params.get('scenario') ?? '1', 10);
-    const phaseToStatus: Record<string, 'betting' | 'playing_hand' | 'round_complete'> = {
+    const phaseToStatus: Record<string, 'betting' | 'playing_hand' | 'round_complete' | 'game_complete'> = {
       betting: 'betting',
       playing: 'playing_hand',
       round_complete: 'round_complete',
+      game_complete: 'game_complete',
     };
     const status = phase ? phaseToStatus[phase] : undefined;
 

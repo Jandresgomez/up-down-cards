@@ -159,7 +159,7 @@ export class GameScreen {
 
   private showGameCompleteOverlay(): void {
     if (!this.gameState) return;
-    this.gameCompleteOverlay = new GameCompleteOverlay(this.gameState, this.playerNames);
+    this.gameCompleteOverlay = new GameCompleteOverlay(this.gameState, this.myPlayerId, this.playerNames);
     this.container.addChild(this.gameCompleteOverlay);
   }
 

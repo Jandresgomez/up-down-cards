@@ -67,7 +67,7 @@ function buildDeck(): { suit: Suit; rank: Rank }[] {
   return deck;
 }
 
-export function getMockGameState(phase: 'betting' | 'playing_hand' | 'round_complete', scenarioId: number = 1): GameState {
+export function getMockGameState(phase: 'betting' | 'playing_hand' | 'round_complete' | 'game_complete', scenarioId: number = 1): GameState {
   const scenario = MOCK_SCENARIOS.find(s => s.id === scenarioId) ?? MOCK_SCENARIOS[0];
   const { playerCount, cardsPerPlayer } = scenario;
   const status: GameStatus = phase;
@@ -82,7 +82,7 @@ export function getMockGameState(phase: 'betting' | 'playing_hand' | 'round_comp
     const hand = deck.slice(i * cardsPerPlayer, (i + 1) * cardsPerPlayer);
     const betValue = i % (cardsPerPlayer + 1); // spread bets across valid range
 
-    if (phase === 'round_complete') {
+    if (phase === 'round_complete' || phase === 'game_complete') {
       // Simulate finished round: some players deliver, some fail
       const bet = betValue;
       const delivered = i % 3 !== 2; // ~2/3 deliver
@@ -148,8 +148,8 @@ export function getMockGameState(phase: 'betting' | 'playing_hand' | 'round_comp
     completedRounds: [],
     createdAt: Date.now(),
     startedAt: Date.now(),
-    completedAt: null,
-    currentRound: {
+    completedAt: phase === 'game_complete' ? Date.now() : null,
+    currentRound: phase === 'game_complete' ? null : {
       roundNumber: 3,
       roundIndex: 2,
       cardsPerPlayer,

@@ -1,7 +1,7 @@
 import { Container, Text, Graphics } from 'pixi.js';
 import { ScrollBox } from '@pixi/ui';
 import { MOCK_SCENARIOS } from '../utils/mockData';
-import { BG_SCENE, BG_ROW, TEAL, BTN_PLAYING, SUCCESS, TEXT_PRIMARY, TEXT_SECONDARY, MUTED } from '../utils/colors';
+import { BG_SCENE, BG_ROW, TEAL, BTN_PLAYING, SUCCESS, GOLD, TEXT_PRIMARY, TEXT_SECONDARY, MUTED } from '../utils/colors';
 import { getResponsiveSizes } from '../utils/responsive';
 
 interface PhaseButton {
@@ -14,7 +14,8 @@ interface PhaseButton {
 const PHASES: PhaseButton[] = [
   { label: 'Betting', shortLabel: 'Bet', phase: 'betting', color: TEAL },
   { label: 'Playing', shortLabel: 'Play', phase: 'playing', color: BTN_PLAYING },
-  { label: 'Round End', shortLabel: 'End', phase: 'round_complete', color: SUCCESS },
+  { label: 'Round End', shortLabel: 'REnd', phase: 'round_complete', color: SUCCESS },
+  { label: 'Game End', shortLabel: 'GEnd', phase: 'game_complete', color: GOLD },
 ];
 
 export class MockPickerScreen {
